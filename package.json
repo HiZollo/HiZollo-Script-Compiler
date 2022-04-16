@@ -1,0 +1,31 @@
+{
+  "name": "@hizollo/hzscript",
+  "version": "1.0.0",
+  "description": "An official implementation of HiZollo Script, written in typescript.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "node test",
+    "build": "tsup"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HiZollo/HiZollo-Script-Compiler.git"
+  },
+  "keywords": [
+    "HiZollo",
+    "Script",
+    "Compiler"
+  ],
+  "author": "HiZollo Dev Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^17.0.23",
+    "typescript": "^4.6.3",
+    "tsup": "^5.12.5"
+  }
+}
