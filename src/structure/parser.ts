@@ -200,60 +200,77 @@ class Parser {
   private Statement(): void {
     if (!this.nowToken) return;
 
+    // 當遇到 Import Token 時，因匯入敘述只能放在程式開頭，便報錯
     if (this.nowTokenIs(Tokens.Import)) {
       ThrowError(this, Errors.LateImport, this.nowToken);
       skip(this, Tokens.Statement);
       return;
     }
 
+    // 遇到識別字
     if (this.nowTokenIs(Tokens.Identifier)) {
       const nowId = this.nowToken;
       this.movePointerToNext();
 
+      // 宣告敘述
       if (this.nowTokenIs(Tokens.Declare)) {
+        // 宣告變數
         this.declareVariable(nowId);
+        // 建碼
         this.buildCode(`let ${makeId(nowId.value)}=`);
         this.movePointerToNext();
+        // 檢查宣告敘述
         this.Declaration();
         this.buildCode(";")
         return;
       }
 
+      // 指定敘述
       if (this.nowTokenIs(Tokens.Assign)) {
+        // 往前移一格以對識別字做檢查
         this.revert();
         this.Identifier();
         this.movePointerToNext();
+        // 檢查指定敘述
         this.Assignment();
         this.buildCode(";");
         return;
       }
 
+      // 函式敘述
       if (this.nowTokenIs(Tokens.LeftBracket)) {
         this.buildCode(`${nowId.value}(`);
         this.movePointerToNext();
+        // 檢查函式
         this.Function();
         this.buildCode(";");
         return;
       }
 
+      // 若非以上三種，即為錯誤敘述，往前回到識別字 Token 後丟出錯誤
       this.revert();
       ThrowError(this, Errors.MissingDeclareOrAssignOperator, this.nowToken);
       skip(this, Tokens.Statement);
       return;
     }
 
+    // 左大括號表示為 If 敘述
     if (this.nowTokenIs(Tokens.LeftCurlyBracket)) {
       this.movePointerToNext();
+      // 檢查 If 敘述
       this.If();
       return;
     }
 
+    // 左中括號表示為 For 敘述
     if (this.nowTokenIs(Tokens.LeftSquareBracket)) {
       this.movePointerToNext();
+      // 檢查 For 敘述
       this.For();
       return;
     }
 
+    // 輸出敘述
     if (this.nowTokenIs(Tokens.Write)) {
       this.movePointerToNext();
       this.Print();
@@ -264,24 +281,32 @@ class Parser {
     ThrowError(this, Errors.UnknownStatement, this.nowToken);
   }
 
+  // 宣告敘述檢查
   private Declaration(): void {
+    // 宣告符號右邊必須為數字，檢查是否為數字
     this.Number();
   }
 
+  // 指定敘述檢查
   private Assignment(): void {
     this.buildCode("=");
+    // 檢查右邊是否為合法表達式
     this.Expression();
   }
 
+  // 韓式敘述檢查
   private Function(): void {
+    // 碰到右括號表示函式無參數，建碼後結束
     if (this.nowTokenIs(Tokens.RightBracket)) {
       this.buildCode(")");
       this.movePointerToNext();
       return;
     }
 
+    // 檢查參數列
     this.ParameterList();
 
+    // 如果這時還不是右括號，表示原程式碼缺少了括號
     if (this.nowTokenIs(Tokens.RightBracket)) {
       this.buildCode(")");
       this.movePointerToNext();
@@ -291,8 +316,12 @@ class Parser {
     }
   }
 
+  // 檢查參數列
   private ParameterList(): void {
+    // 檢查參數
     this.Parameter();
+
+    // 如果下一格是逗號，表示還有下一個參數，一直檢查到沒有為止
     while(this.nowTokenIs(Tokens.Comma)) {
       this.buildCode(',');
       this.movePointerToNext();
@@ -300,21 +329,28 @@ class Parser {
     }
   }
 
+  // 檢查參數
   private Parameter(): void {
+    // 如果是字串就檢查字串
     if (this.nowTokenIs(Tokens.String)) {
       this.String();
       return;
     }
 
+    // 否則檢查是否為合法表達式
     this.Expression();
     return;
   }
 
+  // 檢查 If 敘述
   private If(): void {
+    // 檢查是否為合法 If 開頭
     this.IfHead();
 
+    // 必須接續左括號表示 If 區塊
     if (this.nowTokenIs(Tokens.LeftBracket)) {
       this.buildCode("{");
+      // 進入區塊
       this.nowLevel++;
       this.movePointerToNext();
     } else {
@@ -322,10 +358,13 @@ class Parser {
       skip(this, Tokens.If);
     }
 
+    // 只要是這四種，就表示是一個敘述，進行檢查
+    // 否則就進行 If 結尾的檢查
     while(this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write)) {
       this.Statement();
     }
 
+    // 要用右括號為 If 做結尾
     if (this.nowTokenIs(Tokens.RightBracket)) {
       this.buildCode('}');
       this.movePointerToNext();
@@ -334,26 +373,32 @@ class Parser {
       skip(this, Tokens.If);
     }
 
+    // 離開區塊的清理動作
     this.leaveBlock();
 
+    // 如果碰到斜線（除號），表示有 else if 或 else 區塊
     if (this.nowTokenIs(Tokens.Divide)) {
       this.movePointerToNext();
+      // 斜線 + 左大括號表示 else if
       if (this.nowTokenIs(Tokens.LeftCurlyBracket)) {
         this.buildCode('else ');
         this.movePointerToNext();
         this.If();
         return;
       }
+      // 否則為 else
       this.Else();
     }
 
-
   }
 
+  // 檢查 If 開頭
   private IfHead(): void {
     this.buildCode("if(");
+    // 檢查條件句是否正確
     this.Condition();
 
+    // 必須以右大括號結尾
     if (this.nowTokenIs(Tokens.RightCurlyBracket)) {
       this.buildCode(')');
       this.movePointerToNext();
@@ -363,9 +408,12 @@ class Parser {
     }
   }
 
+  // 檢查條件句
   private Condition(): void {
+    // 檢查關係運算子左邊是否為合法表達式
     this.Expression();
 
+    // 必須接續關係運算子，否則錯誤
     if (this.nowTokenIs(Tokens.LessThan, Tokens.GreaterThan, Tokens.LessOrEqual, Tokens.GreaterOrEqual, Tokens.Equal, Tokens.Inequal)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
@@ -375,11 +423,15 @@ class Parser {
       return;
     }
 
+    // 檢查關係運算子右邊是否為合法表達式
     this.Expression();
   }
 
+  // 檢查 Else
   private Else(): void {
+    // 以左括號開始
     if (this.nowTokenIs(Tokens.LeftBracket)) {
+      // 進入區塊
       this.nowLevel++;
       this.buildCode('else{');
       this.movePointerToNext();
@@ -388,10 +440,13 @@ class Parser {
       skip(this, Tokens.Else);
     }
 
+    // 只要是這四種，就表示是一個敘述，進行檢查
+    // 否則就進行 Else 結尾的檢查
     while(this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write)) {
       this.Statement();
     }
 
+    // 要用右括號做結尾
     if (this.nowTokenIs(Tokens.RightBracket)) {
       this.buildCode('}');
       this.movePointerToNext();
@@ -399,14 +454,20 @@ class Parser {
       ThrowError(this, Errors.MissingRightBracket, this.nowToken);
     }
 
+    // 離開區塊的清理動作
     this.leaveBlock();
 
   }
 
+  // 檢查 For
   private For(): void {
+    // 進入區塊
     this.nowLevel++;
+    // 檢查 For 的開頭
     this.ForHead();
 
+
+    // 必需接續左括號表示 For 區塊
     if (this.nowTokenIs(Tokens.LeftBracket)) {
       this.movePointerToNext();
     } else {
@@ -416,10 +477,13 @@ class Parser {
 
     this.buildCode("{");
 
+    // 只要是這四種，就表示是一個敘述，進行檢查
+    // 否則就進行 For 結尾的檢查
     while(this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write)) {
       this.Statement();
     }
 
+    // 以右括號表示區塊結束
     if (this.nowTokenIs(Tokens.RightBracket)) {
       this.movePointerToNext();
     } else {
@@ -427,22 +491,33 @@ class Parser {
     }
 
     this.buildCode("}");
+    // 離開區塊的清理動作
     this.leaveBlock();
   }
 
+  // For 開頭的檢查
   private ForHead(): void {
+    // 作為遍歷迴圈的變數
     const indexVar = this.nowToken!;
     this.buildCode(`for(let `);
+
+    // 檢查識別字，但不做是否宣告的檢查
     this.Identifier(false);
+
+    // 檢查是否為指定運算子
     if (this.nowTokenIs(Tokens.Assign)) {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingAssignOperator, this.nowToken);
       skip(this, Tokens.ForHead);
     }
+
     this.buildCode("=");
+    // 檢查箭頭左邊是否為合法表達式
     this.Expression();
     this.buildCode(`;${makeId(indexVar.value)}<=`);
+
+    // 檢查箭頭有沒有好好寫
     if (this.nowTokenIs(Tokens.Arrow)) {
       this.movePointerToNext();
     } else {
@@ -450,19 +525,27 @@ class Parser {
       skip(this, Tokens.ForHead);
       return;
     }
+
+    // 檢查箭頭右邊是否為合法表達式
     this.Expression();
     this.buildCode(`;++${makeId(indexVar.value)})`);
+
+    // 以右括號做結束
     if (this.nowTokenIs(Tokens.RightSquareBracket)) {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingRightSquareBracket, this.nowToken);
       skip(this, Tokens.ForHead);
     }
+    // 此時才宣告變數，避免有人在箭頭兩邊的敘述就使用遍歷迴圈的變數但檢查不到
     this.declareVariable(indexVar);
   }
 
+  // 印出敘述
   private Print(): void {
     this.buildCode("_write(");
+
+    // 必須接字串或表達式
     if (this.nowTokenIs(Tokens.String))
       this.String();
     else
@@ -471,13 +554,19 @@ class Parser {
     this.buildCode(")");
   }
 
+  // 檢查是否為表達式
   private Expression(): void {
+    // 檢查開頭的正負號
     if (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
     }
+    // 檢查項目是否正確
+    // 項目是由乘除號連接的一個以上的因子
+    // 因子則是計算的最小單位
     this.Term();
 
+    // 如果是加減號，檢查另外一邊是否也是項目
     while (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
@@ -485,8 +574,11 @@ class Parser {
     }
   }
 
+  // 檢查項目
   private Term(): void {
+    // 檢查是否為計算因子
     this.Factor();
+    // 如果是乘除號，檢查另外一邊是否也是近算因子
     while (this.nowTokenIs(Tokens.Multiply, Tokens.Divide)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
@@ -494,30 +586,42 @@ class Parser {
     }
   }
 
+  // 計算因子
   private Factor(): void {
+    // 識別字開頭，可能是函數或變數
     if (this.nowTokenIs(Tokens.Identifier)) {
       this.movePointerToNext();
+      // 函數
       if (this.nowTokenIs(Tokens.LeftBracket)) {
         this.revert();
         this.buildCode(this.nowToken!.value);
         this.movePointerToNext();
         this.buildCode('(');
         this.movePointerToNext();
+        // 檢查函數
         this.Function();
         return;
       }
+
+      // 否則回頭檢查識別字
       this.revert();
       this.Identifier();
       return;
     }
+
+    // 數字
     if (this.nowTokenIs(Tokens.Number)) {
       this.Number();
       return;
     }
+
+    // 如果碰到左括號
     if (this.nowTokenIs(Tokens.LeftBracket)) {
       this.buildCode('(');
       this.movePointerToNext();
+      // 檢查是否為合法表達式
       this.Expression();
+      // 左右括號必須成對
       if (this.nowTokenIs(Tokens.RightBracket)) {
         this.buildCode(')');
         this.movePointerToNext();
@@ -530,25 +634,33 @@ class Parser {
     }
 
     this.revert();
+    // 上面全部都不是的話，丟出缺少左括號錯誤
     ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
     skip(this, Tokens.Factor);
 
   }
 
+  // 檢查識別字
   private Identifier(checkExist = true, idToken = this.nowToken): void {
+    // 如果是識別字的話
     if (idToken?.token === Tokens.Identifier) {
+      // 建碼
       this.buildCode(makeId(idToken.value));
       this.movePointerToNext();
+      // 如果不用檢查是否宣告，結束
       if (!checkExist) return;
+      // 函數都是從外部模組來的，不用檢查是否存在
       if (this.nowTokenIs(Tokens.LeftBracket)) return;
 
       this.revert();
       let identifier: Identifier | undefined;
       let level = this.nowLevel;
+      // 從識別字堆疊中開始，尋找每一層有沒有宣告過此變數
       while (level > 0 && !identifier) {
         identifier = this.idStack.getId(idToken.value, level--);
       }
 
+      // 找不到就丟出未定義錯誤
       if (!identifier) {
         ThrowError(this, Errors.IdentifierNotDefined, this.nowToken);
         return;
@@ -557,30 +669,39 @@ class Parser {
       this.movePointerToNext();
       return;
     }
+
+    // 丟出遺漏識別字錯誤
     ThrowError(this, Errors.MissingIdentifier, this.nowToken);
   }
 
+  // 檢查數字
   private Number(): void {
+    // 是數字就建碼
     if (this.nowTokenIs(Tokens.Number)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
       return;
     }
+    // 丟出遺漏數字錯誤
     ThrowError(this, Errors.MissingNumber, this.nowToken);
   }
 
+  // 檢查字串
   private String(): void {
+    // 是字串就建碼
     if (this.nowTokenIs(Tokens.String)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
       return;
     }
+    // 否則丟出遺漏字串錯誤
     ThrowError(this, Errors.MissingString, this.nowToken);
     skip(this, Tokens.Statement);
   }
 
 }
 
+// 避免撞名而格式化識別字名稱的函式
 function makeId(identifierName: string): string {
   return `__hzs_C_${identifierName}`;
 }
