@@ -9,10 +9,10 @@ HiZollo Script 是為了提供一個由用戶輸入程式執行而被發明的�
 HiZollo Script 解決了這個問題。它提供了簡單易上手的語法，極受限制的語言特性，以及你可以完全控制你要提供用戶使用的部分。同時編譯器會將其編譯成 JavaScript，讓你可以方便的在各個地方執行。
 
 ## 如何撰寫 HiZollo Script
-請參見語法說明。
+請參見[語法說明](./docs/syntax.md)。
 
 ## 如何使用
-請參見使用說明。
+請參見[使用說明](./docs/guide.md)。
 
 ## 文件
-請參見文件。
+請參見[文件](./docs/documentation.md)。
