@@ -580,7 +580,7 @@ class Parser {
   private Term(): void {
     // 檢查是否為計算因子
     this.Factor();
-    // 如果是乘除號，檢查另外一邊是否也是近算因子
+    // 如果是乘除號，檢查另外一邊是否也是計算因子
     while (this.nowTokenIs(Tokens.Multiply, Tokens.Divide)) {
       this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
