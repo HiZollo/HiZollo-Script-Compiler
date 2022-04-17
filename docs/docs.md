@@ -64,7 +64,7 @@ const ew = new ExecutionWorker(code: string)
 - `includes`：[`PathMap`](#pathmap) 物件。
 
 ### PathMap
-一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件知詳細敘述請看[此](./guide.md)。
+一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件知詳細敘述請看[此](./guide.md#模組)。
 
 ### CompileResult
 一個物件，有以下的鍵值對：
@@ -87,4 +87,4 @@ const ew = new ExecutionWorker(code: string)
 
 ### ExecuteOptions
 一個物件，有以下的鍵值對：
-- `maxExecutionTime`：此程式的最大執行時間，輸入 0 以下的數字來表示無限制。
+- `maxExecutionTime`：此程式的最大執行時間，以毫秒計，輸入 0 以下的數字來表示無限制。

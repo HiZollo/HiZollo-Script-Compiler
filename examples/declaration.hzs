@@ -2,4 +2,4 @@ i := 0
 
 result := 1
 
-oneHundred := 100
+Number100 := 100
