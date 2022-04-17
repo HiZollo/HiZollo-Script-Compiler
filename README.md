@@ -11,4 +11,4 @@ HiZollo Script 是為了提供一個由用戶輸入程式執行而被發明的�
 請參見[使用說明](./docs/guide.md)。
 
 ## 文件
-請參見[文件](./docs/documentation.md)。
+請參見[文件](./docs/docs.md)。
