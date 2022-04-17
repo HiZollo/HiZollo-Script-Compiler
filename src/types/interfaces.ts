@@ -12,7 +12,7 @@ export interface CompilerOptions {
 }
 
 export interface PathMap {
-    [key: string]: string
+  [key: string]: string
 }
 
 export interface ErrorOutput {
