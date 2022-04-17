@@ -2,7 +2,7 @@ import { Scanner } from './scanner';
 import { Identifier, IdentifierStack } from './identifier';
 import { Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
-import { PathMap, ErrorOutout } from '../types/interfaces';
+import { PathMap, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'fs';
 
 class Parser {
@@ -18,7 +18,7 @@ class Parser {
 
   public nowToken: Token | null = null;
   public errorCount: number;
-  public errorMessages: ErrorOutout;
+  public errorMessages: ErrorOutput;
   public result: string = '';
 
   constructor(includePath: { [key: string]: string }) {

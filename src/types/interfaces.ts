@@ -3,7 +3,7 @@ import type { Token } from '../constant/token';
 
 export interface CompileResult {
   errorCount: number,
-  errorMessages: ErrorOutout,
+  errorMessages: ErrorOutput,
   build: string
 }
 
@@ -15,7 +15,7 @@ export interface PathMap {
     [key: string]: string
 }
 
-export interface ErrorOutout {
+export interface ErrorOutput {
   textify: string,
   errors: CompileError[]
 }
