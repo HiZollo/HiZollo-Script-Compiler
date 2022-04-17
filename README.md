@@ -1,4 +1,11 @@
 # HiZollo Script Compiler
+[![npm version](https://img.shields.io/npm/v/@hizollo/hzscript.svg?maxAge=3600)](https://www.npmjs.com/package/@hizollo/hzscript)
+[![Downloads](https://img.shields.io/npm/dt/@hizollo/hzscript.svg?maxAge=3600)](https://www.npmjs.com/package/@hizollo/hzscript)
+[![Last Commit](https://img.shields.io/github/last-commit/HiZollo/HiZollo-Script-Compiler)](https://github.com/HiZollo/HiZollo-Script-Compiler)
+[![Code Size](https://img.shields.io/github/languages/code-size/HiZollo/HiZollo-Script-Compiler)](https://github.com/HiZollo/HiZollo-Script-Compiler)
+![License](https://img.shields.io/github/license/HiZollo/HiZollo-Script-Compiler)
+
+
 一個由 HiZollo 官方開發的 HiZollo Script 編譯器，使用 TypeScript 製作。
 
 ## 什麼是 HiZollo Script
