@@ -66,7 +66,7 @@ const ew = new ExecutionWorker(code: string)
 ### PathMap
 一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件知詳細敘述請看[此](./guide.md)。
 
-### CompilerResult
+### CompileResult
 一個物件，有以下的鍵值對：
 - `errorCount`：編譯錯誤數量。
 - `errorMessages`：編譯錯誤訊息，是一個 [`ErrorOutput`](#erroroutput) 物件。
