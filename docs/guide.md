@@ -32,7 +32,7 @@ const compiler = new Compiler({
 ### 模組
 模組是 HiZollo Script 中最重要的東西，他決定了一個 HiZollo Script 可以做多少 JavaScript 的工作。
 
-要建立一個模組，只需要建立一個包含數個函數的 JavaScript 檔案就好。然後在建立 Compiler 的選項中，`includes` 裡輸入模組的名稱以及檔案路徑。模組並不需用 export 任何東西，編譯器會自動複製模組檔案的全部內容，貼入建碼之中。
+要建立一個模組，只需要建立一個包含數個函數的 JavaScript 檔案就好。然後在建立 Compiler 的選項中，`includes` 裡輸入模組的名稱以及檔案路徑。模組檔案本身並不需用 export 任何東西，編譯器會自動複製模組檔案的全部內容，貼入建碼之中。
 
 任何編譯器一定要提供一個 `core` 核心模組。核心模組一定會被建碼，且不能由使用者手動引入（其他模組都是使用者有引入才會建碼）。核心模組中一定要實作以下三個函式：
 - `_start()`：在程式的最一開始會呼叫此函式
@@ -49,6 +49,13 @@ const compiler = new Compiler({
 ```js
 var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _ flush(); } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
 ```
+
+### 編譯程式
+接下來，你就可以使用 [`Compiler#compile`](./docs.md#成員函式) 方法來編譯 HiZollo Script。將完整的 HiZollo Script 原始碼當作參數傳入。
+```js
+const result = compiler.compile(source);
+```
+編譯器會回給你一個 [`CompileResult`](./docs.md#compileresult) 物件，其中 `build` 會有建碼。確定沒有編譯錯誤後，你可以使用 `eval`、其他東西或下方的 `ExecutionWorker` 來幫你執行此程式。
 
 ## 使用 ExecutionWorker
 [ExecutionWorker](./docs.md#executionworker) 是此套件提供用來執行編譯後內容的物件。你可以設定一個執行時間上限，時間到後若沒有結束，他會自動拋出 `RUNTIME_EXCEED_LIMIT` 例外。
