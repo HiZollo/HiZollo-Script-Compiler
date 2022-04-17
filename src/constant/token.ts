@@ -1,4 +1,5 @@
 import type { Scanner } from '../structure/scanner';
+import { TokenOption } from '../types/interfaces';
 
 enum Tokens {
   ERROR,
@@ -16,12 +17,6 @@ enum Tokens {
   If, Else, For, Print, Function, Expression, Condition,
   Term, Factor, ForHead, IfHead,
   MAX_TOKEN
-}
-type TokenConstruct = {
-  token: Tokens,
-  left: number,
-  right: number,
-  value: string
 }
 
 const followTokenSet = {
@@ -47,7 +42,7 @@ class Token {
   public left: number;
   public right: number;
   public value: string;
-  constructor(scanner: Scanner, { token, left, right, value }: TokenConstruct) {
+  constructor(scanner: Scanner, { token, left, right, value }: TokenOption) {
     this.token = token;
     this.left = left;
     this.right = right;

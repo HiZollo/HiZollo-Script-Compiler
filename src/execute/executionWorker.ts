@@ -1,8 +1,5 @@
 import { Worker } from 'worker_threads';
-
-type ExecuteOptions = {
-  maxExecutionTime: number
-}
+import { ExecuteOptions } from '../types/interfaces';
 
 class ExecutionWorker {
   private code: string;
