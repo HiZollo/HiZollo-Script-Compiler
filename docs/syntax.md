@@ -97,7 +97,7 @@
 ```
 <Identifier>(<ParameterList>)
 
-<ParameterList> ::= <Parameter>, { <Parameter> }
+<ParameterList> ::= <Parameter> {, <Parameter> }
 <Parameter> ::= <Expression> | <String>
 ```
 [範例](../examples/function.hzs)
