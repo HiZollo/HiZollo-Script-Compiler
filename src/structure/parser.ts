@@ -110,12 +110,14 @@ class Parser {
     this.loadAllToken();
     // 設定目前原始碼巢狀深度
     this.nowLevel = 1;
+
     // 載入核心模組
-    this.buildCode(
-      readFileSync(
-        this.includePath['core'], 'utf-8'
-      )
-    );
+    const coreModuleCode =
+      this.includePath['core'].startsWith('code:')
+      ? this.includePath['core'].slice(5)
+      : readFileSync(this.includePath['core'], 'utf-8');
+
+    this.buildCode(coreModuleCode.trim() + '\n');
 
     // 如果 Scanner 不小心掃到尾巴，這裡把他拿掉
     // @ts-ignore
