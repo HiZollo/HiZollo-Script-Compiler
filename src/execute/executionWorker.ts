@@ -16,15 +16,13 @@ class ExecutionWorker {
 
       if (options.maxExecutionTime > 0) {
         var timeout = setTimeout(() => {
-          reject({ error: new Error("EXCEED_RUNTIME_LIMIT") })
+          reject(new Error("EXCEED_RUNTIME_LIMIT"))
           worker.terminate();
         }, options.maxExecutionTime);
       }
 
       worker.once('error', (err: Error) => {
-        reject({
-          error: err
-        });
+        reject(err);
       });
 
       worker.once('exit', (exitCode: number) => {
