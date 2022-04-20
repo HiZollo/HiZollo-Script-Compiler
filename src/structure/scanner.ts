@@ -8,7 +8,7 @@ class Scanner {
   private linePosition: number;
   private charPosition: number;
   private currentLine: string;
-  
+
   constructor() {
     this.source = [];
     this.nextWord = '';
@@ -65,6 +65,7 @@ class Scanner {
     // 這個 token 的值
     let tokenValue: string = '';
     while(true) {
+      const nowLine = this.linePosition;
       // 檢查是否為 Identifier
       if (/[A-Za-z]/.test(this.nextWord)) {
         // 繼續往下讀取直到碰到非識別字可用字符
@@ -73,7 +74,7 @@ class Scanner {
           this.advance();
           // @ts-ignore
           if (this.nextWord === -1) break;
-        } while(/[A-Za-z0-9]/.test(this.nextWord))
+        } while(/[A-Za-z0-9]/.test(this.nextWord) && nowLine === this.linePosition);
 
         // 回傳
         return this.makeToken(Tokens.Identifier, tokenValue);
@@ -86,7 +87,7 @@ class Scanner {
           this.advance();
           // @ts-ignore
           if (this.nextWord === -1) break;
-        } while(/\d+/.test(this.nextWord));
+        } while(/\d+/.test(this.nextWord) && nowLine === this.linePosition);
 
         // 回傳
         return this.makeToken(Tokens.Number, tokenValue)
@@ -134,7 +135,7 @@ class Scanner {
           return this.makeToken(Tokens.ERROR, tokenValue);
 
         // < 開頭
-        // 可能識別符：「<」LessThan、「<=」LessOrEqual、「<<<」Write
+        // 可能識別符：「<」LessThan、「<=」LessOrEqual、「<<<」Write、「<->」Swap
         case '<':
           tokenValue += this.nextWord;
           this.advance();
@@ -143,6 +144,18 @@ class Scanner {
             tokenValue += this.nextWord;
             this.advance();
             return this.makeToken(Tokens.LessOrEqual, tokenValue);
+          }
+
+          // @ts-ignore
+          if (this.nextWord === '-') {
+            tokenValue += this.nextWord;
+            this.advance();
+            if (this.nextWord === '>') {
+              tokenValue += this.nextWord;
+              this.advance();
+              return this.makeToken(Tokens.Swap, tokenValue);
+            }
+            return this.makeToken(Tokens.ERROR, tokenValue);
           }
 
           if (this.nextWord === '<') {
@@ -184,7 +197,6 @@ class Scanner {
         // " 開頭，為字串字面常數
         // 從雙引號開始，一路往下讀，不可換行，直到下一個雙引號
         case '"':
-          let nowLine = this.linePosition;
           tokenValue += this.nextWord;
           this.advance();
           while (this.nextWord !== '"' && nowLine === this.linePosition) {
