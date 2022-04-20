@@ -5,7 +5,7 @@ enum Tokens {
   ERROR,
   Identifier, String, Number,
   Write, LessThan, LessOrEqual, Equal, Inequal, GreaterThan, GreaterOrEqual, Assign, Declare,
-  Plus, Minus, Multiply, Divide, Colon,
+  Plus, Minus, Multiply, Divide, Colon, Swap, 
   LeftSquareBracket, RightSquareBracket,
   LeftCurlyBracket, RightCurlyBracket,
   LeftBracket, RightBracket,

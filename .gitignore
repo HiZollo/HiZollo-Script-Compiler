@@ -3,5 +3,6 @@ dist
 libs
 
 test.js
+out.js
 test.hzs
 rulebook.txt

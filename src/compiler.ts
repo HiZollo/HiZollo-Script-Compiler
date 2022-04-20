@@ -5,7 +5,7 @@ import { CompilerOptions, CompileResult, PathMap } from './types/interfaces';
 class Compiler {
   private parser: Parser;
   private includes: PathMap;
-  
+
   constructor(options: CompilerOptions) {
     if (!options.includes.core) throw new Error('MISSING_CORE_MODULE');
     this.includes = options.includes;

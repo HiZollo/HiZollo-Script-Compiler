@@ -93,7 +93,7 @@ class Parser {
   }
 
   // 當離開一程式碼區域時做的清理動作
-  private leaveBlock() {
+  private leaveBlock(): void {
     // 將識別字堆疊中此區域宣告的的識別字全部移除
     while (this.idStack.top() && this.idStack.top()?.level == this.nowLevel)
       this.idStack.pop();
@@ -246,6 +246,33 @@ class Parser {
         // 檢查指定敘述
         this.Assignment();
         this.buildCode(";");
+        return;
+      }
+
+      // 交換敘述
+      if (this.nowTokenIs(Tokens.Swap)) {
+        // 往前移一格已對識別字做檢查
+        this.revert();
+        this.Identifier(true, false); // 檢查但不建碼
+        this.movePointerToNext();
+
+        if (!this.nowTokenIs(Tokens.Identifier)) {
+          this.revert();
+          ThrowError(this, Errors.MissingIdentifier, this.nowToken);
+          skip(this, Tokens.Statement);
+          return;
+        }
+
+        const secondToken = this.nowToken;
+        this.Identifier(true, false); // 檢查但不建碼
+
+        // 建碼
+        const tmp = makeId(`swapOp_tmp_$${nowId.value}$${secondToken.value}`);
+        this.buildCode("{");
+        this.buildCode(`const ${tmp}=${makeId(nowId.value)};`);
+        this.buildCode(`${makeId(nowId.value)}=${makeId(secondToken.value)};`);
+        this.buildCode(`${makeId(secondToken.value)}=${tmp};`);
+        this.buildCode("}");
         return;
       }
 
@@ -653,11 +680,11 @@ class Parser {
   }
 
   // 檢查識別字
-  private Identifier(checkExist = true, idToken = this.nowToken): void {
+  private Identifier(checkExist = true, build = true, idToken = this.nowToken): void {
     // 如果是識別字的話
     if (idToken?.token === Tokens.Identifier) {
       // 建碼
-      this.buildCode(makeId(idToken.value));
+      if (build) this.buildCode(makeId(idToken.value));
       this.movePointerToNext();
       // 如果不用檢查是否宣告，結束
       if (!checkExist) return;
