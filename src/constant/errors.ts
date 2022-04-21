@@ -58,7 +58,7 @@ function ThrowError(parser: Parser, errorType: Errors, token: Token | null): voi
     output += ' ';
   }
   parser['movePointerToNext']();
-  for(let i = 0; i<token.value.length; i++) {
+  for (let i = 0; i<token.value.length; i++) {
     output += '~';
   }
   parser.errorMessages.textify +=

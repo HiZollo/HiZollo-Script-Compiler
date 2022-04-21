@@ -50,7 +50,7 @@ class Scanner {
         this.nextWord = -1;
         return;
       }
-    } while(!this.currentLine.length);
+    } while (!this.currentLine.length);
 
     // 重設指標位置至行首並讀取
     this.charPosition = 0;
@@ -60,11 +60,11 @@ class Scanner {
   // 解析下一個 token 的函式
   public nextToken(): Token | null {
     // 如果下個字是 -1，代表已到檔案結尾
-    if(this.nextWord === -1) return null;
+    if (this.nextWord === -1) return null;
 
     // 這個 token 的值
     let tokenValue: string = '';
-    while(true) {
+    while (true) {
       const nowLine = this.linePosition;
       // 檢查是否為 Identifier
       if (/[A-Za-z]/.test(this.nextWord)) {
@@ -74,7 +74,7 @@ class Scanner {
           this.advance();
           // @ts-ignore
           if (this.nextWord === -1) break;
-        } while(/[A-Za-z0-9]/.test(this.nextWord) && nowLine === this.linePosition);
+        } while (/[A-Za-z0-9]/.test(this.nextWord) && nowLine === this.linePosition);
 
         // 回傳
         return this.makeToken(Tokens.Identifier, tokenValue);
@@ -87,7 +87,7 @@ class Scanner {
           this.advance();
           // @ts-ignore
           if (this.nextWord === -1) break;
-        } while(/\d+/.test(this.nextWord) && nowLine === this.linePosition);
+        } while (/\d+/.test(this.nextWord) && nowLine === this.linePosition);
 
         // 回傳
         return this.makeToken(Tokens.Number, tokenValue)
