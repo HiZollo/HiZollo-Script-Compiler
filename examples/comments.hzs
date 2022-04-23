@@ -1,0 +1,11 @@
+' 引入模組
+>>> "Util"
+
+' 宣告變數
+a := 0
+
+' 指定變數為其中一個值
+a = choose("pineapple pizza", "chocomint ice", "chocomint pizza")
+
+' 輸出
+<<< "I want to eat " <<< a
