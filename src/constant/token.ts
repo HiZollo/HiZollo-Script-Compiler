@@ -5,11 +5,12 @@ enum Tokens {
   ERROR,
   Identifier, String, Number,
   Write, LessThan, LessOrEqual, Equal, Inequal, GreaterThan, GreaterOrEqual, Assign, Declare,
-  Plus, Minus, Multiply, Divide, Colon, Swap, 
+  Plus, Minus, Multiply, Divide, Colon, Swap,
   LeftSquareBracket, RightSquareBracket,
   LeftCurlyBracket, RightCurlyBracket,
   LeftBracket, RightBracket,
   Question, Arrow, Comma, Import,
+  Comments, 
 
   MAX_TERMINAL_TOKEN,
 

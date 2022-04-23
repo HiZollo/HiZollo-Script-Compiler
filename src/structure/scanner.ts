@@ -300,6 +300,16 @@ class Scanner {
           this.advance();
           return this.makeToken(Tokens.Comma, tokenValue);
 
+        case "'":
+          do {
+            tokenValue += this.nextWord;
+            this.advance();
+            // @ts-ignore
+            if (this.nextWord === -1) break;
+          } while (nowLine === this.linePosition);
+          return this.makeToken(Tokens.Comments, tokenValue);
+
+
         // 被略過的字元
         case ' ': case '\0': case '\t':
         case '\r': case '\n': case '':

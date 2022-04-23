@@ -49,8 +49,7 @@ const errorToString: TranslateMap = {
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {
   if (!token) {
-    // console.error('????????????');
-    return;
+    token = parser['tokens'][parser['tokens'].length-1];
   }
   parser.errorCount++;
   let output: string = '****';

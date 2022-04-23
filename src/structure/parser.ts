@@ -43,9 +43,11 @@ class Parser {
     this.result = '';
   }
 
-  // 取得下一個 Token
+  // 取得下一個 Token，會自動跳過註解
   public nextToken(): void {
-    this.nowToken = this.getToken();
+    do {
+      this.nowToken = this.getToken();
+    } while (this.nowTokenIs(Tokens.Comments));
   }
 
   // 提供外部取得原始碼的方法
