@@ -11,6 +11,7 @@ class Parser {
   private tokens: Token[];
   private pointer: number;
   private endImport: boolean = false;
+  private insideLoop: boolean = false;
   private nowLevel: number = 0;
   private idStack: IdentifierStack = new IdentifierStack();
   private includePath: PathMap;
@@ -35,6 +36,7 @@ class Parser {
     this.tokens = [];
     this.pointer = -1;
     this.endImport = false;
+    this.insideLoop = false;
     this.importedModule = [];
 
     this.nowToken = null;
@@ -311,6 +313,24 @@ class Parser {
       return;
     }
 
+    // break 或 continue，只能使用在迴圈內
+    if (this.nowTokenIs(Tokens.Arrow)) {
+      if (this.insideLoop) {
+        this.movePointerToNext();
+        if (this.nowTokenIs(Tokens.Bar)) {
+          this.buildCode("break;");
+          this.movePointerToNext();
+          return;
+        }
+        this.buildCode("continue;");
+        return;
+      }
+
+      ThrowError(this, Errors.InappropriateBreakStatement, this.nowToken);
+      skip(this, Tokens.Statement);
+      return;
+    }
+
     // 輸出敘述
     if (this.nowTokenIs(Tokens.Write)) {
       this.movePointerToNext();
@@ -399,9 +419,9 @@ class Parser {
       skip(this, Tokens.If);
     }
 
-    // 只要是這四種，就表示是一個敘述，進行檢查
+    // 只要是這五種，就表示是一個敘述，進行檢查
     // 否則就進行 If 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write)) {
+    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow)) {
       this.Statement();
     }
 
@@ -518,10 +538,12 @@ class Parser {
 
     this.buildCode("{");
 
-    // 只要是這四種，就表示是一個敘述，進行檢查
+    // 只要是這五種，就表示是一個敘述，進行檢查
     // 否則就進行 For 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write)) {
+    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow)) {
+      this.insideLoop = true;
       this.Statement();
+      this.insideLoop = false;
     }
 
     // 以右括號表示區塊結束

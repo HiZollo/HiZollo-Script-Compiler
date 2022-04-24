@@ -23,6 +23,7 @@ enum Errors {
   MissingDeclareOrAssignOperator,
   MissingArrow,
   InvalidComparation,
+  InappropriateBreakStatement
 }
 
 const errorToString: TranslateMap = {
@@ -45,6 +46,7 @@ const errorToString: TranslateMap = {
   [`${Errors.MissingDeclareOrAssignOperator}`]: "遺漏指定運算符或宣告運算符",
   [`${Errors.MissingArrow}`]: "遺漏箭頭",
   [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
+  [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內"
 }
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {
