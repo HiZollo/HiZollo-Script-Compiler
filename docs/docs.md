@@ -53,6 +53,7 @@ const ew = new ExecutionWorker(code: string)
 - `MissingDeclareOrAssignOperator`：遺漏指定運算符或宣告運算符
 - `MissingArrow`：遺漏箭頭
 - `InvalidComparation`：關係運算子錯誤
+- `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
 
 ## Tokens
 一個表示所有 Token 種類的列舉，請參考[原始碼](../src/constant/token.ts)。
