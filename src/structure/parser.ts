@@ -292,7 +292,7 @@ class Parser {
 
       // 若非以上三種，即為錯誤敘述，往前回到識別字 Token 後丟出錯誤
       this.revert();
-      ThrowError(this, Errors.MissingDeclareOrAssignOperator, this.nowToken);
+      ThrowError(this, Errors.UnknownIdentifier, this.nowToken);
       skip(this, Tokens.Statement);
       return;
     }

@@ -5,6 +5,7 @@ import { TranslateMap } from '../types/interfaces';
 
 enum Errors {
   UnknownStatement,
+  UnknownIdentifier,
   CantImportCoreModule,
   AlreadyImported,
   LateImport,
@@ -20,7 +21,6 @@ enum Errors {
   MissingRightSquareBracket,
   MissingRightCurlyBracket,
   MissingAssignOperator,
-  MissingDeclareOrAssignOperator,
   MissingArrow,
   InvalidComparation,
   InappropriateBreakStatement
@@ -28,6 +28,7 @@ enum Errors {
 
 const errorToString: TranslateMap = {
   [`${Errors.UnknownStatement}`]: "未知敘述",
+  [`${Errors.UnknownIdentifier}`]: "未知用途識別字",
   [`${Errors.CantImportCoreModule}`]: "不能手動引入核心模組",
   [`${Errors.AlreadyImported}`]: "已經引入此模組",
   [`${Errors.LateImport}`]: "匯入敘述應該放在程式開頭",
@@ -43,7 +44,6 @@ const errorToString: TranslateMap = {
   [`${Errors.MissingRightSquareBracket}`]: "遺漏右中括號",
   [`${Errors.MissingRightCurlyBracket}`]: "遺漏右大括號",
   [`${Errors.MissingAssignOperator}`]: "遺漏指定運算符",
-  [`${Errors.MissingDeclareOrAssignOperator}`]: "遺漏指定運算符或宣告運算符",
   [`${Errors.MissingArrow}`]: "遺漏箭頭",
   [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
   [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內"

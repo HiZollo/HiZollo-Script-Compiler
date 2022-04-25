@@ -35,6 +35,7 @@ const ew = new ExecutionWorker(code: string)
 ## Errors
 一個表示錯誤內容的列舉，內容與對應中文敘述如下：
 - `UnknownStatement`：未知敘述
+- `UnknownIdentifier`：未知用途識別字
 - `CantImportCoreModule`："不能手動引入核心模組
 - `AlreadyImported`：已經引入此模組
 - `LateImport`：匯入敘述應該放在程式開頭
@@ -50,7 +51,6 @@ const ew = new ExecutionWorker(code: string)
 - `MissingRightSquareBracket`：遺漏右中括號
 - `MissingRightCurlyBracket`：遺漏右大括號
 - `MissingAssignOperator`：遺漏指定運算符
-- `MissingDeclareOrAssignOperator`：遺漏指定運算符或宣告運算符
 - `MissingArrow`：遺漏箭頭
 - `InvalidComparation`：關係運算子錯誤
 - `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
