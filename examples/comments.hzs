@@ -9,3 +9,7 @@ a = choose("pineapple pizza", "chocomint ice", "chocomint pizza")
 
 ' 輸出
 <<< "I want to eat " <<< a
+
+
+; 也可以使用分號開頭當註解
+# 也可以使用井字開頭當註解
