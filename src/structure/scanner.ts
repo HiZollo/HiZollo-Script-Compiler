@@ -307,9 +307,9 @@ class Scanner {
           this.advance();
           return this.makeToken(Tokens.Bar, tokenValue);
 
-        // ' 開頭
+        // '／;／# 開頭
         // 註解，直接拉到行末並宣成註解 Token，Parser 會將其忽略
-        case "'":
+        case "'": case ";": case "#":
           do {
             tokenValue += this.nextWord;
             this.advance();
