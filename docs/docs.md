@@ -36,7 +36,7 @@ const ew = new ExecutionWorker(code: string)
 一個表示錯誤內容的列舉，內容與對應中文敘述如下：
 - `UnknownStatement`：未知敘述
 - `UnknownIdentifier`：未知用途識別字
-- `CantImportCoreModule`："不能手動引入核心模組
+- `CantImportCoreModule`：不能手動引入核心模組
 - `AlreadyImported`：已經引入此模組
 - `LateImport`：匯入敘述應該放在程式開頭
 - `MissingModuleName`：遺漏模組名稱
