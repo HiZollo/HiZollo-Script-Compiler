@@ -502,9 +502,9 @@ class Parser {
       skip(this, Tokens.Else);
     }
 
-    // 只要是這四種，就表示是一個敘述，進行檢查
+    // 只要是這五種，就表示是一個敘述，進行檢查
     // 否則就進行 Else 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write)) {
+    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow)) {
       this.Statement();
     }
 
