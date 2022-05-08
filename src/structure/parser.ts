@@ -141,6 +141,10 @@ class Parser {
     while (this.nowToken && !this.endImport) {
       this.Include();
     }
+
+    // 程式正式開始的建碼
+    this.buildCode("_start();");
+
     // 解析一般區
     while (this.nowToken) {
       this.Statement();
@@ -208,9 +212,6 @@ class Parser {
 
     // 結束引入階段（引入敘述只能放在程式開頭）
     this.endImport = true;
-
-    // 程式正式開始的建碼
-    this.buildCode("_start();");
   }
 
   private Statement(): void {
