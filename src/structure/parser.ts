@@ -420,9 +420,9 @@ class Parser {
       skip(this, Tokens.If);
     }
 
-    // 只要是這五種，就表示是一個敘述，進行檢查
+    // 只要是這六種，就表示是一個敘述，進行檢查
     // 否則就進行 If 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow)) {
+    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
       this.Statement();
     }
 
@@ -502,9 +502,9 @@ class Parser {
       skip(this, Tokens.Else);
     }
 
-    // 只要是這五種，就表示是一個敘述，進行檢查
+    // 只要是這六種，就表示是一個敘述，進行檢查
     // 否則就進行 Else 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow)) {
+    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
       this.Statement();
     }
 
@@ -539,9 +539,9 @@ class Parser {
 
     this.buildCode("{");
 
-    // 只要是這五種，就表示是一個敘述，進行檢查
+    // 只要是這六種，就表示是一個敘述，進行檢查
     // 否則就進行 For 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow)) {
+    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
       this.insideLoop = true;
       this.Statement();
       this.insideLoop = false;
