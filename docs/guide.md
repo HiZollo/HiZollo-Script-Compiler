@@ -49,7 +49,7 @@ const compiler = new Compiler({
 
 #### 範例核心模組實作
 ```js
-var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _ flush(); } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
+var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _flush(); } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
 ```
 
 ### 編譯程式
