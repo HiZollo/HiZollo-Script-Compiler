@@ -13,3 +13,4 @@ a = choose("pineapple pizza", "chocomint ice", "chocomint pizza")
 
 ; 也可以使用分號開頭當註解
 # 也可以使用井字開頭當註解
+' 從註解符號開始，整行的文字會被忽略
