@@ -25,7 +25,7 @@ const compiler = new Compiler({
   includes: {
     core: 'path/to/core/module.js',
     module1: 'path/to/the/module.js',
-    module2: 'path/to/this/module.js'
+    module2: 'code:/** Code of module2 **/'
   }
 });
 ```
@@ -33,6 +33,8 @@ const compiler = new Compiler({
 模組是 HiZollo Script 中最重要的東西，他決定了一個 HiZollo Script 可以做多少 JavaScript 的工作。
 
 要建立一個模組，只需要建立一個包含數個函數的 JavaScript 檔案就好。然後在建立 Compiler 的選項中，`includes` 裡輸入模組的名稱以及檔案路徑。模組檔案本身並不需用 export 任何東西，編譯器會自動複製模組檔案的全部內容，貼入建碼之中。
+
+你也可以動態的建立模組﹐此時就不需要檔案，只需在原本放檔案路徑的地方使用 `code:你的程式`，編譯器就會將其視為 JavaScript 程式碼，在建碼時直接使用。
 
 任何編譯器一定要提供一個 `core` 核心模組。核心模組一定會被建碼，且不能由使用者手動引入（其他模組都是使用者有引入才會建碼）。核心模組中一定要實作以下三個函式：
 - `_start()`：在程式的最一開始會呼叫此函式
