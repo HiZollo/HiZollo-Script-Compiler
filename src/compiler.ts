@@ -7,7 +7,7 @@ class Compiler {
   private includes: PathMap;
 
   constructor(options: CompilerOptions) {
-    if (!options.includes.core) throw new Error('MISSING_CORE_MODULE');
+    if (!options?.includes?.core) throw new Error('MISSING_CORE_MODULE');
     this.includes = options.includes;
     this.parser = new Parser(this.includes);
   }
