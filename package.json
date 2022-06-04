@@ -1,6 +1,6 @@
 {
   "name": "@hizollo/hzscript",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An official implementation of HiZollo Script, written in typescript.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
