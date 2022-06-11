@@ -562,11 +562,15 @@ class Parser {
   // For 開頭的檢查
   private ForHead(): void {
     // 作為遍歷迴圈的變數
-    const indexVar = this.nowToken!;
+    const indexVar = this.nowToken;
     this.buildCode(`for(let `);
 
     // 檢查識別字，但不做是否宣告的檢查
     this.Identifier(false);
+    if (!indexVar) {
+      skip(this, Tokens.ForHead);
+      return;
+    }
 
     // 檢查是否為指定運算子
     if (this.nowTokenIs(Tokens.Assign)) {
