@@ -199,11 +199,12 @@ class Scanner {
         case '"':
           tokenValue += this.nextWord;
           this.advance();
-          while (this.nextWord !== '"' && nowLine === this.linePosition) {
+          while (this.nextWord !== '"' && this.nextWord !== -1 && nowLine === this.linePosition) {
             tokenValue += this.nextWord;
             this.advance();
           }
-          if (nowLine === this.linePosition) {
+          // @ts-ignore
+          if (nowLine === this.linePosition && this.nextWord !== -1) {
             tokenValue += this.nextWord;
             this.advance();
             return this.makeToken(Tokens.String, tokenValue);
