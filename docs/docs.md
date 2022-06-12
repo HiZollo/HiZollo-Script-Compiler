@@ -54,6 +54,7 @@ const ew = new ExecutionWorker(code: string)
 - `MissingArrow`：遺漏箭頭
 - `InvalidComparation`：關係運算子錯誤
 - `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
+- `UseDisabledFunction`：使用被禁用的函數
 
 ## Tokens
 一個表示所有 Token 種類的列舉，請參考[原始碼](../src/constant/token.ts)。
@@ -63,6 +64,7 @@ const ew = new ExecutionWorker(code: string)
 ### CompilerOptions
 一個物件，有以下的鍵值對：
 - `includes`：[`PathMap`](#pathmap) 物件。
+- `disabledFunctions`：`string[]`，列出被禁用的函式。
 
 ### PathMap
 一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件知詳細敘述請看[此](./guide.md#模組)。
