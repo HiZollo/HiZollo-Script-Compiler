@@ -23,7 +23,8 @@ enum Errors {
   MissingAssignOperator,
   MissingArrow,
   InvalidComparation,
-  InappropriateBreakStatement
+  InappropriateBreakStatement,
+  UseDisabledFunction
 }
 
 const errorToString: TranslateMap = {
@@ -46,7 +47,8 @@ const errorToString: TranslateMap = {
   [`${Errors.MissingAssignOperator}`]: "遺漏指定運算符",
   [`${Errors.MissingArrow}`]: "遺漏箭頭",
   [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
-  [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內"
+  [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內",
+  [`${Errors.UseDisabledFunction}`]: "使用被禁用的函數"
 }
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {

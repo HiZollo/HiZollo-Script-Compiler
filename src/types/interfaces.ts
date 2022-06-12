@@ -8,7 +8,8 @@ export interface CompileResult {
 }
 
 export interface CompilerOptions {
-  includes: PathMap
+  includes: PathMap,
+  disabledFunctions: string[]
 }
 
 export interface PathMap {

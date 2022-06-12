@@ -15,6 +15,7 @@ class Parser {
   private nowLevel: number = 0;
   private idStack: IdentifierStack = new IdentifierStack();
   private includePath: PathMap;
+  private disabledFunctions: string[];
   private importedModule: string[] = [];
 
   public nowToken: Token | null = null;
@@ -22,8 +23,9 @@ class Parser {
   public errorMessages: ErrorOutput;
   public result: string = '';
 
-  constructor(includePath: { [key: string]: string }) {
+  constructor(includePath: { [key: string]: string }, disabledFunctions: string[]) {
     this.includePath = includePath;
+    this.disabledFunctions = disabledFunctions;
   }
 
   // 初始化 Parser
@@ -94,6 +96,11 @@ class Parser {
     // 如果有，擲出變數重複宣告錯誤
     ThrowError(this, Errors.RedeclareIdentifier, idToken);
     skip(this, Tokens.Assignment);
+  }
+
+  // 檢查是否有禁用此函式
+  private functionDisabled(idToken: Token) {
+    return this.disabledFunctions.includes(idToken.value);
   }
 
   // 當離開一程式碼區域時做的清理動作
@@ -283,8 +290,7 @@ class Parser {
 
       // 函式敘述
       if (this.nowTokenIs(Tokens.LeftBracket)) {
-        this.buildCode(`${nowId.value}(`);
-        this.movePointerToNext();
+        this.revert();
         // 檢查函式
         this.Function();
         this.buildCode(";");
@@ -356,8 +362,28 @@ class Parser {
     this.Expression();
   }
 
-  // 韓式敘述檢查
+  // 函式敘述檢查
   private Function(): void {
+    // 檢查函式是否被禁用
+    if (this.functionDisabled(this.nowToken)) {
+      ThrowError(this, Errors.UseDisabledFunction, this.nowToken);
+      skip(this, Tokens.Function)
+      return;
+    }
+
+    this.buildCode(`${this.nowToken.value}`)
+    this.movePointerToNext();
+
+    // 檢查是否跟隨左括號
+    if (this.nowTokenIs(Tokens.LeftBracket)) {
+      this.buildCode(`(`);
+      this.movePointerToNext();
+    } else {
+      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+      skip(this, Tokens.Function)
+      return;
+    }
+
     // 碰到右括號表示函式無參數，建碼後結束
     if (this.nowTokenIs(Tokens.RightBracket)) {
       this.buildCode(")");
@@ -662,10 +688,6 @@ class Parser {
       // 函數
       if (this.nowTokenIs(Tokens.LeftBracket)) {
         this.revert();
-        this.buildCode(this.nowToken!.value);
-        this.movePointerToNext();
-        this.buildCode('(');
-        this.movePointerToNext();
         // 檢查函數
         this.Function();
         return;

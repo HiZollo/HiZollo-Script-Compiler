@@ -5,11 +5,13 @@ import { CompilerOptions, CompileResult, PathMap } from './types/interfaces';
 class Compiler {
   private parser: Parser;
   private includes: PathMap;
+  private disabledFunctions
 
-  constructor(options: CompilerOptions) {
-    if (!options?.includes?.core) throw new Error('MISSING_CORE_MODULE');
-    this.includes = options.includes;
-    this.parser = new Parser(this.includes);
+  constructor({ includes = {}, disabledFunctions = [] }: CompilerOptions) {
+    if (!includes?.core) throw new Error('MISSING_CORE_MODULE');
+    this.includes = includes;
+    this.disabledFunctions = disabledFunctions;
+    this.parser = new Parser(this.includes, this.disabledFunctions);
   }
 
   public compile(source: string): CompileResult {
