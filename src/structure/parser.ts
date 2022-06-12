@@ -780,7 +780,11 @@ class Parser {
   private String(): void {
     // 是字串就建碼
     if (this.nowTokenIs(Tokens.String)) {
-      this.buildCode(this.nowToken!.value);
+      let { value } = this.nowToken;
+
+      // 判斷是否為「\」結尾
+      value = value.endsWith(`\\"`) ? value.slice(0, -2) + `\\\\"` : value;
+      this.buildCode(value);
       this.movePointerToNext();
       return;
     }
