@@ -26,7 +26,8 @@ const compiler = new Compiler({
     core: 'path/to/core/module.js',
     module1: 'path/to/the/module.js',
     module2: 'code:/** Code of module2 **/'
-  }
+  }, 
+  disabledFunctions: ['eval']
 });
 ```
 ### 模組
@@ -53,6 +54,9 @@ const compiler = new Compiler({
 ```js
 var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _flush(); } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
 ```
+
+### 禁用函式
+在 HiZollo Script 中，使用者仍能存取一些全域的 JavaScript 函式。若你不希望某些函式被使用，可以在 `disabledFunction` 選項中指定那些函式，當使用者使用了那些函式時，編繹器會自動丟出編譯錯誤。
 
 ### 編譯程式
 接下來，你就可以使用 [`Compiler#compile`](./docs.md#成員函式) 方法來編譯 HiZollo Script。將完整的 HiZollo Script 原始碼當作參數傳入。
