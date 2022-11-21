@@ -63,7 +63,7 @@ var _buffer = ""; function _start() { } function _write(str) { _buffer += str; i
 ```js
 const result = compiler.compile(source);
 ```
-編譯器會回給你一個 [`CompileResult`](./docs.md#compileresult) 物件，其中 `build` 會有建碼。確定沒有編譯錯誤後，你可以使用 `eval`、其他東西或下方的 `ExecutionWorker` 來幫你執行此程式。
+編譯器會回給你一個 [`CompileResult`](./docs.md#compileresult) 物件，其中 `build` 物件中會有含有建碼。確定沒有編譯錯誤後，你可以使用 `eval`、其他東西或下方的 `ExecutionWorker` 來幫你執行此程式。
 
 ## 使用 ExecutionWorker
 [ExecutionWorker](./docs.md#executionworker) 是此套件提供用來執行編譯後內容的物件。你可以設定一個執行時間上限，時間到後若沒有結束，他會自動拋出 `RUNTIME_EXCEED_LIMIT` 例外。
