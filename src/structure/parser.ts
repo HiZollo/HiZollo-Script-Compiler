@@ -143,7 +143,7 @@ class Parser {
       ? this.includePath['core'].slice(5)
       : readFileSync(this.includePath['core'], 'utf-8');
 
-    this.buildCode(coreModuleCode.trim() + '\n');
+    this.addModuleCode(coreModuleCode.trim() + '\n');
 
     // 如果 Scanner 不小心掃到尾巴，這裡把他拿掉
     // @ts-ignore
@@ -219,7 +219,7 @@ class Parser {
 
         // 建碼
         this.addModuleCode(moduleCode.trim() + '\n');
-        // 將模組放入以引入的模組清單
+        // 將模組放入已引入的模組清單
         this.importedModule.push(moduleName);
         this.movePointerToNext();
         return;

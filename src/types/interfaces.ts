@@ -4,7 +4,12 @@ import type { Token, Tokens } from '../constant/token';
 export interface CompileResult {
   errorCount: number,
   errorMessages: ErrorOutput,
-  build: string
+  build: BuildResult
+}
+
+export interface BuildResult {
+  partial: string,
+  full: string
 }
 
 export interface CompilerOptions {

@@ -24,7 +24,10 @@ class Compiler {
     return {
       errorCount: this.parser.errorCount,
       errorMessages: this.parser.errorMessages,
-      build: this.parser.result
+      build: {
+        partial: this.parser.transpiledCode,
+        full: this.parser.result
+      }
     }
 
   }
