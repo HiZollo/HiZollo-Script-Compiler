@@ -73,7 +73,13 @@ const ew = new ExecutionWorker(code: string)
 一個物件，有以下的鍵值對：
 - `errorCount`：編譯錯誤數量。
 - `errorMessages`：編譯錯誤訊息，是一個 [`ErrorOutput`](#erroroutput) 物件。
-- `build`：建碼。在編譯錯誤數量不為零時不保證建出來的程式碼可運作或運作結果符合預期。
+- `build`：建碼，是一個 [`BuildResult`](#buildresult) 物件。
+
+### BuildResult
+一個物件，有以下的鍵值對：
+- `full`：完整的建碼。在編譯錯誤數量不為 0 時不保證建碼可運作或運作結果符合預期。
+- `partial`：除去模組以外的建碼。
+
 
 ### ErrorOutput
 一個物件，有以下的鍵值對：
