@@ -8,3 +8,6 @@ test.js
 out.js
 test.hzs
 rulebook.txt
+
+
+*.swp
