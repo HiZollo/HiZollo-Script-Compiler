@@ -30,8 +30,8 @@
   "author": "HiZollo Dev Team",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^17.0.35",
-    "tsup": "^5.12.8",
-    "typescript": "^4.7.2"
+    "@types/node": "^22.20.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   }
 }
