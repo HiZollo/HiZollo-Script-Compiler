@@ -13,7 +13,7 @@ CommonJS:
 ```js
 const { Compiler } = require('@hizollo/hzscript');
 ```
-ModuleJS:
+ES Module:
 ```js
 import { Compiler } from '@hizollo/hzscript';
 ```
@@ -31,39 +31,55 @@ const compiler = new Compiler({
 });
 ```
 ### 模組
-模組是 HiZollo Script 中最重要的東西，他決定了一個 HiZollo Script 可以做多少 JavaScript 的工作。
+模組是 HiZollo Script 中最重要的東西，他決定了一個 HiZollo Script 可以做多少 JavaScript 的工作。模組可以分為兩種：核心模組與一般模組。
 
-要建立一個模組，只需要建立一個包含數個函數的 JavaScript 檔案就好。然後在建立 Compiler 的選項中，`includes` 裡輸入模組的名稱以及檔案路徑。模組檔案本身並不需用 export 任何東西，編譯器會自動複製模組檔案的全部內容，貼入建碼之中。
-
-你也可以動態的建立模組﹐此時就不需要檔案，只需在原本放檔案路徑的地方使用 `code:你的程式`，編譯器就會將其視為 JavaScript 程式碼，在建碼時直接使用。
-
-任何編譯器一定要提供一個 `core` 核心模組。核心模組一定會被建碼，且不能由使用者手動引入（其他模組都是使用者有引入才會建碼）。核心模組中一定要實作以下三個函式：
+#### 核心模組
+任何編譯器必須提供一個 `core` 核心模組。核心模組一定會被建碼，且不能由使用者手動引入。核心模組中一定要實作以下三個函式：
 - `_start()`：在程式的最一開始會呼叫此函式
 - `_write(content: any)`：在使用者使用 `<<<` 輸出時會呼叫此函式
 - `_end()`：在程式結束時會呼叫此函式
 
-除此之外，想提供什麼以及不想提供什麼都由你決定。
-
-請注意使用者只能使用名稱只有英文字母跟數字的函數，因此如果你不想讓使用者碰到一些內部的函式，可以使用特殊字元在函式身上；相反的，如果你想讓使用者使用一個函式，請不要用特殊字元進行命名。
-
-此編譯器編譯出來的變數都會加上 `__hzs_C` 前綴，請避免以此為變數／函式名稱的開頭，避免在編譯之後出現撞名。
-
-此外，我們建議最小化你的模組，建出來的程式碼會比較好看。
+除此之外沒有任何限制，可以自行加上任何函式或副作用。
 
 #### 範例核心模組實作
 ```js
 var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _flush(); } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
 ```
 
+#### 一般模組
+建立一般模組時，只需要建立一個包含 JavaScript 程式碼的檔案，並在建立 Compiler 時，於 includes 中指定模組名稱與檔案路徑即可。只有被引用的模組才會被建碼。
+
+你也可以動態建立模組，此時不需要提供檔案，只需在原本放置檔案路徑的位置使用 `code:你的程式`。編譯器會將其視為 JavaScript 程式碼，並在建碼時直接加入。
+
+模組使用 __hzs_export() 將函式提供給使用者：
+```js
+__hzs_export("namespace", { func1, func2 });
+```
+`namespace` 僅用於表示函式的來源，以及在警告和錯誤訊息中使用。使用者呼叫函式時只需要使用函式名稱，不需要指定 `namespace`。例如：
+```js
+function hello(name) {
+    return "Hello, " + name;
+}
+
+__hzs_export("greeting", { hello });
+```
+使用者可以直接呼叫：
+```
+hello("World")
+```
+不同 namespace 可以匯出相同的函式名稱。當發生函式名稱衝突時，後匯出的函式會覆蓋先前匯出的函式。這取決於使用者的引入順序。
+
+函式是否提供給使用者使用，由 `__hzs_export()` 決定。未透過 `__hzs_export()` 匯出的函式只能在模組內部使用。此外，使用者可以使用的函式名稱只能由英文字母與數字組成，因此要匯出給使用者的函式，名稱只能由英文字母與數字組成，不能包含特殊字元。
+
 ### 禁用函式
-在 HiZollo Script 中，使用者仍能存取一些全域的 JavaScript 函式。若你不希望某些函式被使用，可以在 `disabledFunction` 選項中指定那些函式，當使用者使用了那些函式時，編繹器會自動丟出編譯錯誤。
+在 HiZollo Script 中，使用者仍能存取一些全域的 JavaScript 函式。若你不希望某些函式被使用，可以在 `disabledFunctions` 選項中指定那些函式，當使用者使用了那些函式時，編繹器會自動丟出編譯錯誤。
 
 ### 編譯程式
 接下來，你就可以使用 [`Compiler#compile`](./docs.md#成員函式) 方法來編譯 HiZollo Script。將完整的 HiZollo Script 原始碼當作參數傳入。
 ```js
 const result = compiler.compile(source);
 ```
-編譯器會回給你一個 [`CompileResult`](./docs.md#compileresult) 物件，其中 `build` 物件中會有含有建碼。確定沒有編譯錯誤後，你可以使用 `eval`、其他東西或下方的 `ExecutionWorker` 來幫你執行此程式。
+編譯器會回傳一個 [`CompileResult`](./docs.md#compileresult) 物件，其中 `build` 物件中會含有建碼。確定沒有編譯錯誤後，你可以使用 `eval`、其他東西或下方的 `ExecutionWorker` 來幫你執行此程式。
 
 ## 使用 ExecutionWorker
 [ExecutionWorker](./docs.md#executionworker) 是此套件提供用來執行編譯後內容的物件。你可以設定一個執行時間上限，時間到後若沒有結束，他會自動拋出 `RUNTIME_EXCEED_LIMIT` 例外。
@@ -73,7 +89,7 @@ CommonJS:
 ```js
 const { ExecutionWorker } = require('@hizollo/hzscript');
 ```
-ModuleJS:
+ES Module:
 ```js
 import { ExecutionWorker } from '@hizollo/hzscript';
 ```
@@ -93,3 +109,4 @@ ew.execute({ maxExecutionTime: 3000 });
 
 ## 文件
 請參閱[文件](./docs.md)。
+
