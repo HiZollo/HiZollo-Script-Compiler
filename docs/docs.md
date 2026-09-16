@@ -1,6 +1,6 @@
 # 文件
 ## 目錄
-- [Complier](#Compiler)
+- [Compiler](#Compiler)
 - [ExecutionWorker](#ExecutionWorker)
 - [Errors](#Errors)
 - [Tokens](#Tokens)
@@ -84,7 +84,7 @@ const ew = new ExecutionWorker(code: string)
 ### ErrorOutput
 一個物件，有以下的鍵值對：
 - `textify`：格式化好的編譯錯誤訊息。
-- `errors`：一個 [`CompileError`](#compilererror)`[]` 物件。
+- `errors`：一個 [`CompileError`](#compileerror)`[]` 物件。
 
 ### CompileError
 一個物件，有以下的鍵值對：
