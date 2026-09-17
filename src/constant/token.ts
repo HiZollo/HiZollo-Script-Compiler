@@ -20,23 +20,31 @@ enum Tokens {
   MAX_TOKEN
 }
 
+const statementFollow = [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.RightBracket]
+const expressionFollow = [...statementFollow, Tokens.RightSquareBracket, Tokens.RightCurlyBracket, Tokens.Comma, Tokens.LessThan, Tokens.LessOrEqual, Tokens.Equal, Tokens.Inequal, Tokens.GreaterThan, Tokens.GreaterOrEqual];
+const termFollow = [ Tokens.Plus, Tokens.Minus, ...expressionFollow ];
+const factorFollow = [ Tokens.Multiply, Tokens.Divide, ...termFollow ];
+
 const followTokenSet = {
-  [`${Tokens.Include}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write],
-  [`${Tokens.Statement}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write],
-  [`${Tokens.Declaration}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write],
-  [`${Tokens.Assignment}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write],
-  [`${Tokens.For}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write],
-  [`${Tokens.Print}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write],
-  [`${Tokens.Function}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Multiply, Tokens.Divide],
-  [`${Tokens.Expression}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.RightCurlyBracket, Tokens.RightSquareBracket, Tokens.Arrow, Tokens.Comma, Tokens.RightBracket, Tokens.GreaterThan, Tokens.GreaterOrEqual, Tokens.Equal, Tokens.LessThan, Tokens.LessOrEqual],
-  [`${Tokens.Condition}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.RightCurlyBracket, Tokens.RightSquareBracket, Tokens.Arrow, Tokens.Comma, Tokens.RightBracket, Tokens.GreaterThan, Tokens.GreaterOrEqual, Tokens.Equal, Tokens.LessThan, Tokens.LessOrEqual],
-  [`${Tokens.Term}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.RightCurlyBracket, Tokens.RightSquareBracket, Tokens.Arrow, Tokens.Comma, Tokens.RightBracket, Tokens.GreaterThan, Tokens.GreaterOrEqual, Tokens.Equal, Tokens.LessThan, Tokens.LessOrEqual],
-  [`${Tokens.Factor}`]: [Tokens.Import, Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.RightCurlyBracket, Tokens.RightSquareBracket, Tokens.Arrow, Tokens.Comma, Tokens.RightBracket, Tokens.GreaterThan, Tokens.GreaterOrEqual, Tokens.Equal, Tokens.LessThan, Tokens.LessOrEqual],
+  [`${Tokens.Include}`]: statementFollow,
+  [`${Tokens.Statement}`]: statementFollow,
+  [`${Tokens.Declaration}`]: statementFollow,
+  [`${Tokens.Assignment}`]: statementFollow,
+  [`${Tokens.If}`]: statementFollow,
+  [`${Tokens.Else}`]: statementFollow,
+  [`${Tokens.For}`]: statementFollow,
+  [`${Tokens.Print}`]: statementFollow,
+
+  [`${Tokens.IfHead}`]: [Tokens.LeftBracket],
   [`${Tokens.ForHead}`]: [Tokens.LeftBracket],
-  [`${Tokens.If}`]: [Tokens.Identifier, Tokens.RightCurlyBracket, Tokens.RightSquareBracket, Tokens.Colon],
-  [`${Tokens.IfHead}`]: [Tokens.Question],
-  [`${Tokens.Else}`]: [Tokens.Identifier, Tokens.RightCurlyBracket, Tokens.RightSquareBracket]
-}
+
+  [`${Tokens.Expression}`]: expressionFollow,
+  [`${Tokens.Condition}`]: [Tokens.RightCurlyBracket],
+  [`${Tokens.Term}`]: termFollow,
+  [`${Tokens.Factor}`]: factorFollow,
+
+  [`${Tokens.Function}`]: factorFollow
+};
 
 class Token {
   public token: Tokens;
