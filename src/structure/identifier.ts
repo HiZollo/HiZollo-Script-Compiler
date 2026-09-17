@@ -25,7 +25,7 @@ class IdentifierStack {
   }
 
   top(): Identifier | null {
-    if (!this.stack.length) null;
+    if (!this.stack.length) return null;
     return this.stack[this.stack.length-1];
   }
 
