@@ -197,19 +197,34 @@ class Scanner {
         // " 開頭，為字串字面常數
         // 從雙引號開始，一路往下讀，不可換行，直到下一個雙引號
         case '"':
-          tokenValue += this.nextWord;
-          this.advance();
-          while (this.nextWord !== '"' && this.nextWord !== -1 && nowLine === this.linePosition) {
             tokenValue += this.nextWord;
             this.advance();
-          }
-          // @ts-ignore
-          if (nowLine === this.linePosition && this.nextWord !== -1) {
-            tokenValue += this.nextWord;
-            this.advance();
-            return this.makeToken(Tokens.String, tokenValue);
-          }
-          return this.makeToken(Tokens.ERROR, tokenValue);
+            // @ts-ignore
+            while (this.nextWord !== -1 && nowLine === this.linePosition) {
+              // 遇到跳脫字元 \ 就強制把下一個字吃進去
+              // @ts-ignore
+              if (this.nextWord === '\\') {
+                tokenValue += this.nextWord;
+                this.advance();
+                if (this.nextWord !== -1 && nowLine === this.linePosition) {
+                  tokenValue += this.nextWord;
+                  this.advance();
+                }
+                continue;
+              }
+
+              // 結尾雙引號
+              if (this.nextWord === '"') {
+                tokenValue += this.nextWord;
+                this.advance();
+                return this.makeToken(Tokens.String, tokenValue);
+              }
+
+              // 一般字串內容
+              tokenValue += this.nextWord;
+              this.advance();
+            }
+            return this.makeToken(Tokens.ERROR, tokenValue);
 
         // + 開頭
         // 可能識別符：「+」Plus
