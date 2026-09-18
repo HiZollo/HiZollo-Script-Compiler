@@ -32,6 +32,23 @@ const ew = new ExecutionWorker(code: string)
 ### 成員函式
 - `execute(options: `[`ExecuteOptions`](#executeoptions)`)`：執行程式。回傳一個 `Promise<void>` 表示成功結束。
 
+## ExecutionError
+### 說明
+[`ExecutionWorker`](#executionworker) 拋出例外時的自訂類別，繼承了 [`Error`](https://nodejs.org/api/errors.html)。
+
+### 屬性
+- `message`：錯誤訊息，是一個字串
+- `code`：錯誤代號，是一個 [`ExecutionErrorCode`](#executionerrorcode) 列舉
+
+## ExecutionTimeoutError
+### 說明
+[`ExecutionWorker`](#executionworker) 超時時拋出的自訂例外類別，繼承了 [`ExecutionError`](#executionerror)。
+
+## ExecutionErrorCode
+一個表示 [`ExecutionWorker`](#executionworker) 例外狀態的代號列舉，內容如下：
+- `WORKER_ERROR`：Worker 運行本身的錯誤
+- `EXCEED_RUNTIME_LIMIT`：程式運行超過 ExecutionWorker 設定的時間上限
+
 ## Errors
 一個表示錯誤內容的列舉，內容與對應中文敘述如下：
 - `UnknownStatement`：未知敘述
@@ -88,12 +105,18 @@ const ew = new ExecutionWorker(code: string)
 
 ### CompileError
 一個物件，有以下的鍵值對：
-- `error`: [`Errors`](#errors) 列舉的值，對應到此錯誤編號。
-- `errorText`: 字串，對應到此錯誤中文敘述。
-- `line`: 數字，對應到此錯誤發生之行號。
-- `column`: 數字，對應到此錯誤發生之符號最右邊於該行之索引值。
-- `token`: [`Tokens`](#tokens) 列舉的值，且應小於 `Tokens.MAX_TERMINAL_TOKEN`，表示發生錯誤之 Token 值。
+- `error`：[`Errors`](#errors) 列舉的值，對應到此錯誤編號。
+- `errorText`：字串，對應到此錯誤中文敘述。
+- `line`：數字，對應到此錯誤發生之行號。
+- `column`：數字，對應到此錯誤發生之符號最右邊於該行之索引值。
+- `token`：[`Tokens`](#tokens) 列舉的值，且應小於 `Tokens.MAX_TERMINAL_TOKEN`，表示發生錯誤之 Token 值。
 
 ### ExecuteOptions
 一個物件，有以下的鍵值對：
 - `maxExecutionTime`：此程式的最大執行時間，以毫秒計，輸入 0 以下的數字來表示無限制。
+### ExecutionResult
+一個物件，有以下的鍵值對：
+- `stdout`：[`ExecutionWorker`](#executionworker) 執行後輸出到標準輸出的內容。
+- `stderr`：ExecutionWorker 執行後輸出到標準錯誤的內容。
+- `exitCode`：ExecutionWorker 執行的程式的結束狀態。
+- `executionTime`：ExecutionWorker 執行程式的總運行時間。

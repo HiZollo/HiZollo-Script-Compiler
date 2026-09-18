@@ -42,6 +42,13 @@ export interface ExecuteOptions {
   maxExecutionTime: number
 }
 
+export interface ExecutionResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  executionTime: number;
+}
+
 export interface TokenOption {
   token: Tokens,
   left: number,
