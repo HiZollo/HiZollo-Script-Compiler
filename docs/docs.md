@@ -2,6 +2,9 @@
 ## 目錄
 - [Compiler](#Compiler)
 - [ExecutionWorker](#ExecutionWorker)
+- [ExecutionError](#ExecutionError)
+- [ExecutionTimeoutError](#ExecutionTimeoutError)
+- [ExecutionErrorCode](#ExecutionErrorCode)
 - [Errors](#Errors)
 - [Tokens](#Tokens)
 - [類別定義](#類別定義)
