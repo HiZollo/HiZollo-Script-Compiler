@@ -136,6 +136,8 @@ class Parser {
 
     // 載入所有 Token
     this.loadAllToken();
+    if (this.tokens.length === 0) return;
+
     // 設定目前原始碼巢狀深度
     this.nowLevel = 1;
 
@@ -148,8 +150,9 @@ class Parser {
     this.addModuleCode(coreModuleCode.trim() + '\n');
 
     // 如果 Scanner 不小心掃到尾巴，這裡把他拿掉
+    const lastTokenValue = this.tokens[this.tokens.length - 1].value;
     // @ts-ignore
-    if (this.tokens[this.tokens.length-1].value === -1 || this.tokens[this.tokens.length-1].value === '-1') this.tokens.pop();
+    if (lastTokenValue === -1 || lastTokenValue === '-1') this.tokens.pop();
 
     // 指標開始移動
     this.movePointerToNext();
