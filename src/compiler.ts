@@ -13,15 +13,17 @@ globalThis.__hzs__ = {
 };
 
 class HZSRuntimeError extends Error {
-  constructor(message) {
-    super(message);
+  constructor(code, data = {}) {
+    super(code)
     this.name = "HZSRuntimeError"
+    this.code = code
+    this.data = data
   }
 }
 
 class HZSWarning {
-  constructor(type, data) {
-    this.type = type;
+  constructor(code, data = {}) {
+    this.code = code;
     this.data = data;
   }
 }
@@ -53,10 +55,10 @@ function __hzs_export(ns, obj_of_func) {
 function __hzs_invoke(name, ...args) {
   const func = globalThis.__hzs__.__callable__[name];
   if (!func) {
-    throw new HZSRuntimeError(\`Function '\${name}' is not defined or imported.\`);
+    throw new HZSRuntimeError("MODULE_FUNCTION_NOT_FOUND", { fn: name });
   }
   if (typeof func !== "function") {
-    throw new HZSRuntimeError(\`\${name} is not a function.\`);
+    throw new HZSRuntimeError("NOT_A_MODULE_FUNCTION", { name });
   }
   return func(...args);
 }`).code;
