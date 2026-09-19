@@ -33,7 +33,7 @@ const ew = new ExecutionWorker(code: string)
 - `code`: 要執行的程式。
 
 ### 成員函式
-- `execute(options: `[`ExecuteOptions`](#executeoptions)`)`：執行程式。回傳一個 `Promise<void>` 表示成功結束。
+- `execute(options: `[`ExecuteOptions`](#executeoptions)`)`：執行程式。回傳一個 `Promise<ExecutionResult>` 表示成功結束。
 
 ## ExecutionError
 ### 說明
@@ -87,7 +87,7 @@ const ew = new ExecutionWorker(code: string)
 - `disabledFunctions`：`string[]`，列出被禁用的函式。
 
 ### PathMap
-一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件知詳細敘述請看[此](./guide.md#模組)。
+一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件之詳細敘述請看[此](./guide.md#模組)。
 
 ### CompileResult
 一個物件，有以下的鍵值對：
@@ -99,7 +99,6 @@ const ew = new ExecutionWorker(code: string)
 一個物件，有以下的鍵值對：
 - `full`：完整的建碼。在編譯錯誤數量不為 0 時不保證建碼可運作或運作結果符合預期。
 - `partial`：除去模組以外的建碼。
-
 
 ### ErrorOutput
 一個物件，有以下的鍵值對：
@@ -117,6 +116,7 @@ const ew = new ExecutionWorker(code: string)
 ### ExecuteOptions
 一個物件，有以下的鍵值對：
 - `maxExecutionTime`：此程式的最大執行時間，以毫秒計，輸入 0 以下的數字來表示無限制。
+
 ### ExecutionResult
 一個物件，有以下的鍵值對：
 - `stdout`：[`ExecutionWorker`](#executionworker) 執行後輸出到標準輸出的內容。
