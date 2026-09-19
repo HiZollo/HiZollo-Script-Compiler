@@ -37,13 +37,14 @@ const compiler = new Compiler({
 任何編譯器必須提供一個 `core` 核心模組。核心模組一定會被建碼，且不能由使用者手動引入。核心模組中一定要實作以下三個函式：
 - `_start()`：在程式的最一開始會呼叫此函式
 - `_write(content: any)`：在使用者使用 `<<<` 輸出時會呼叫此函式
+- `_panic(e: Error)`：程式發生執行錯誤時會呼叫此函式
 - `_end()`：在程式結束時會呼叫此函式
 
 除此之外沒有任何限制，可以自行加上任何函式或副作用。
 
 #### 範例核心模組實作
 ```js
-var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _flush(); } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
+var _buffer = ""; function _start() { } function _write(str) { _buffer += str; if (_buffer.length > 1024) _flush(); } function _panic(e) { throw e; } function _end() { _flush(); } function _flush() { process.stdout.write(_buffer); _buffer = ""; }
 ```
 
 #### 一般模組
