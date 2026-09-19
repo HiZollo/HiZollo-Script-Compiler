@@ -71,7 +71,9 @@ class Compiler {
 
   constructor({ includes = {}, disabledFunctions = [] }: CompilerOptions) {
     if (!includes?.core) throw new Error('MISSING_CORE_MODULE');
-    this.includes = includes;
+    this.includes = Object.create(null);
+    Object.assign(this.includes, includes);
+
     this.disabledFunctions = disabledFunctions;
     this.parser = new Parser(this.includes, this.disabledFunctions, bootstrapCode);
   }
