@@ -23,6 +23,7 @@ class HZSRuntimeError extends Error {
 
 class HZSWarning {
   constructor(code, data = {}) {
+    this.name = "HZSWarning"
     this.code = code;
     this.data = data;
   }
