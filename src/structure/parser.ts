@@ -255,14 +255,14 @@ class Parser {
 
       // 宣告敘述
       if (this.nowTokenIs(Tokens.Declare)) {
-        // 宣告變數
-        this.declareVariable(nowId);
         // 建碼
         this.buildCode(`let ${makeId(nowId.value)}=`);
         this.movePointerToNext();
         // 檢查宣告敘述
         this.Declaration();
         this.buildCode(";")
+        // 宣告變數
+        this.declareVariable(nowId);
         return;
       }
 
@@ -368,8 +368,8 @@ class Parser {
 
   // 宣告敘述檢查
   private Declaration(): void {
-    // 宣告符號右邊必須為數字，檢查是否為數字
-    this.Number();
+    // 檢查右邊是否為合法表達式
+    this.Expression();
   }
 
   // 指定敘述檢查
