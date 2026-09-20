@@ -81,7 +81,7 @@ class Scanner {
       }
       // 檢查是否為數字
       if (/\d+/.test(this.nextWord)) {
-        // 繼續往下讀取直到碰到非數字
+        // 讀取整數部分
         do {
           tokenValue += this.nextWord;
           this.advance();
@@ -89,12 +89,42 @@ class Scanner {
           if (this.nextWord === -1) break;
         } while (/\d+/.test(this.nextWord) && nowLine === this.linePosition);
 
+        // 檢查是否有小數點
+        if (this.nextWord === '.') {
+          tokenValue += this.nextWord; // 吃掉小數點
+          this.advance();
+
+          // 讀取小數部分
+          // @ts-ignore
+          while (this.nextWord !== -1 && /\d+/.test(this.nextWord) && nowLine === this.linePosition) {
+            tokenValue += this.nextWord;
+            this.advance();
+          }
+        }
+
         // 回傳
         return this.makeToken(Tokens.Number, tokenValue)
       }
 
       // 檢查
       switch(this.nextWord) {
+        // . 開頭
+        // 可能是忽略整數部分的小數
+        case '.':
+          tokenValue += this.nextWord;
+          this.advance();
+          // @ts-ignore
+          if (this.nextWord !== -1 && /\d+/.test(this.nextWord)) {
+            // 讀取小數部分
+            // @ts-ignore
+            while (this.nextWord !== -1 && /\d+/.test(this.nextWord) && nowLine === this.linePosition) {
+              tokenValue += this.nextWord;
+              this.advance();
+            }
+            return this.makeToken(Tokens.Number, tokenValue);
+          }
+          return this.makeToken(Tokens.ERROR, tokenValue);
+
         // : 開頭
         // 可能識別符：「:」Colon、「:=」Declare
         case ':':

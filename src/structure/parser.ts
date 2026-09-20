@@ -667,11 +667,6 @@ class Parser {
 
   // 檢查是否為表達式
   private Expression(): void {
-    // 檢查開頭的正負號
-    if (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
-      this.buildCode(this.nowToken!.value);
-      this.movePointerToNext();
-    }
     // 檢查項目是否正確
     // 項目是由乘除號連接的一個以上的因子
     // 因子則是計算的最小單位
@@ -679,7 +674,7 @@ class Parser {
 
     // 如果是加減號，檢查另外一邊是否也是項目
     while (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
-      this.buildCode(this.nowToken!.value);
+      this.buildCode(this.nowToken!.value + " ");
       this.movePointerToNext();
       this.Term();
     }
@@ -699,6 +694,15 @@ class Parser {
 
   // 計算因子
   private Factor(): void {
+    // 檢查開頭的正負號
+    if (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
+      this.buildCode(this.nowToken!.value + " ");
+      this.movePointerToNext();
+      // 正負號後必須跟隨計算因子
+      this.Factor();
+      return;
+    }
+    
     // 識別字開頭，可能是函數或變數
     if (this.nowTokenIs(Tokens.Identifier)) {
       this.movePointerToNext();
@@ -785,7 +789,8 @@ class Parser {
   private Number(): void {
     // 是數字就建碼
     if (this.nowTokenIs(Tokens.Number)) {
-      this.buildCode(this.nowToken!.value);
+      const safeNumberStr = Number(this.nowToken!.value).toString();
+      this.buildCode(safeNumberStr);
       this.movePointerToNext();
       return;
     }
