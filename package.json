@@ -2,13 +2,14 @@
   "name": "@hizollo/hzscript",
   "version": "1.4.1",
   "description": "An official implementation of HiZollo Script, written in typescript.",
-  "main": "./dist/index.js",
+  "type": "module",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -16,7 +17,7 @@
   ],
   "scripts": {
     "test": "node test",
-    "build": "tsup"
+    "build": "tsdown"
   },
   "repository": {
     "type": "git",
@@ -32,13 +33,10 @@
   "devDependencies": {
     "@types/node": "^22.20.3",
     "@types/uglify-js": "^3.17.5",
-    "tsup": "^8.5.1",
+    "tsdown": "^0.23.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "uglify-js": "^3.19.3"
-  },
-  "overrides": {
-    "esbuild": "0.28.2"
   }
 }
