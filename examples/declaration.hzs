@@ -1,5 +1,7 @@
 i := 0
 
-result := 1
+result := 1 + 2 * 3
 
 Number100 := 100
+
+abc := -1.23
