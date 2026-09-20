@@ -40,6 +40,7 @@ export interface TranslateMap {
 
 export interface ExecuteOptions {
   maxExecutionTime: number
+  argv?: string[]
 }
 
 export interface ExecutionResult {

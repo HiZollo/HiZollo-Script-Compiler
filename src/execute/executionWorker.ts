@@ -33,7 +33,8 @@ class ExecutionWorker {
       const worker = new Worker(this.code, {
         eval: true,
         stdout: true,
-        stderr: true
+        stderr: true,
+        argv: options.argv ?? []
       });
 
       let stdout = '';
