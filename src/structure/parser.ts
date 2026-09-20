@@ -104,6 +104,16 @@ class Parser {
     skip(this, Tokens.Assignment);
   }
 
+  // 檢查指定變數的層級
+  private getResolvedLevel(name: string): number | null {
+    let level = this.nowLevel;
+    while (level > 0) {
+      if (this.idStack.getId(name, level)) return level;
+      level--;
+    }
+    return null; // 找不到
+  }
+
   // 檢查是否有禁用此函式
   private functionDisabled(idToken: Token) {
     return this.disabledFunctions.includes(idToken.value);
@@ -256,7 +266,7 @@ class Parser {
       // 宣告敘述
       if (this.nowTokenIs(Tokens.Declare)) {
         // 建碼
-        this.buildCode(`let ${makeId(nowId.value)}=`);
+        this.buildCode(`let ${makeId(nowId.value, this.nowLevel)}=`);
         this.movePointerToNext();
         // 檢查宣告敘述
         this.Declaration();
@@ -296,11 +306,17 @@ class Parser {
         this.Identifier(true, false); // 檢查但不建碼
 
         // 建碼
-        const tmp = makeId(`swapOp_tmp_$${nowId.value}$${secondToken.value}`);
+        const level1 = this.getResolvedLevel(nowId.value) || this.nowLevel;
+        const level2 = this.getResolvedLevel(secondToken.value) || this.nowLevel;
+
+        const tmp = makeId(`swapOp_tmp_$${nowId.value}$${secondToken.value}`, this.nowLevel);
+        const id1 = makeId(nowId.value, level1);
+        const id2 = makeId(secondToken.value, level2);
+
         this.buildCode("{");
-        this.buildCode(`const ${tmp}=${makeId(nowId.value)};`);
-        this.buildCode(`${makeId(nowId.value)}=${makeId(secondToken.value)};`);
-        this.buildCode(`${makeId(secondToken.value)}=${tmp};`);
+        this.buildCode(`const ${tmp}=${id1};`);
+        this.buildCode(`${id1}=${id2};`);
+        this.buildCode(`${id2}=${tmp};`);
         this.buildCode("}");
         return;
       }
@@ -626,7 +642,7 @@ class Parser {
     this.buildCode("=");
     // 檢查箭頭左邊是否為合法表達式
     this.Expression();
-    this.buildCode(`;${makeId(indexVar.value)}<=`);
+    this.buildCode(`;${makeId(indexVar.value, this.nowLevel)}<=`);
 
     // 檢查箭頭有沒有好好寫
     if (this.nowTokenIs(Tokens.Arrow)) {
@@ -639,7 +655,7 @@ class Parser {
 
     // 檢查箭頭右邊是否為合法表達式
     this.Expression();
-    this.buildCode(`;++${makeId(indexVar.value)})`);
+    this.buildCode(`;++${makeId(indexVar.value, this.nowLevel)})`);
 
     // 以右括號做結束
     if (this.nowTokenIs(Tokens.RightSquareBracket)) {
@@ -755,28 +771,19 @@ class Parser {
   private Identifier(checkExist = true, build = true, idToken = this.nowToken): void {
     // 如果是識別字的話
     if (idToken?.token === Tokens.Identifier) {
-      // 建碼
-      if (build) this.buildCode(makeId(idToken.value));
-      this.movePointerToNext();
-      // 如果不用檢查是否宣告，結束
-      if (!checkExist) return;
-      // 函數都是從外部模組來的，不用檢查是否存在
-      if (this.nowTokenIs(Tokens.LeftBracket)) return;
-
-      this.revert();
-      let identifier: Identifier | undefined;
-      let level = this.nowLevel;
-      // 從識別字堆疊中開始，尋找每一層有沒有宣告過此變數
-      while (level > 0 && !identifier) {
-        identifier = this.idStack.getId(idToken.value, level--);
+      let level = this.nowLevel
+      // 要檢查的話，抓取識別字層級
+      if (checkExist) {
+        const foundLevel = this.getResolvedLevel(idToken.value);
+        // 找不到層級，代表沒有宣告
+        if (foundLevel === null) {
+          ThrowError(this, Errors.IdentifierNotDefined, this.nowToken);
+          return;
+        }
+        level = foundLevel;
       }
 
-      // 找不到就丟出未定義錯誤
-      if (!identifier) {
-        ThrowError(this, Errors.IdentifierNotDefined, this.nowToken);
-        return;
-      }
-
+      if (build) this.buildCode(makeId(idToken.value, level));
       this.movePointerToNext();
       return;
     }
@@ -814,8 +821,8 @@ class Parser {
 }
 
 // 避免撞名而格式化識別字名稱的函式
-function makeId(identifierName: string): string {
-  return `__hzs_C_${identifierName}`;
+function makeId(identifierName: string, level: number): string {
+  return `__hzs_C${level}_${identifierName}`;
 }
 
 export { Parser }
