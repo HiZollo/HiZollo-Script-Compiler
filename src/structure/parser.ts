@@ -587,7 +587,6 @@ class Parser {
     // 檢查 For 的開頭
     this.ForHead();
 
-
     // 必需接續左括號表示 For 區塊
     if (this.nowTokenIs(Tokens.LeftBracket)) {
       this.movePointerToNext();
@@ -598,13 +597,16 @@ class Parser {
 
     this.buildCode("{");
 
+    // 進入迴圈
+    const prevLoopState = this.insideLoop;
+    this.insideLoop = true;
     // 只要是這六種，就表示是一個敘述，進行檢查
     // 否則就進行 For 結尾的檢查
     while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
-      this.insideLoop = true;
       this.Statement();
-      this.insideLoop = false;
     }
+    // 退出本層迴圈
+    this.insideLoop = prevLoopState;
 
     // 以右括號表示區塊結束
     if (this.nowTokenIs(Tokens.RightBracket)) {
@@ -614,7 +616,7 @@ class Parser {
     }
 
     this.buildCode("}");
-    // 離開區塊的清理動作
+    // 離開區塊的清理
     this.leaveBlock();
   }
 
