@@ -1,0 +1,8 @@
+>>> "Math"
+
+r := randomInt(1, 10)
+
+[{ r > 6 }] (
+  <<< r <<< " "
+  r = randomInt(1, 10)
+)

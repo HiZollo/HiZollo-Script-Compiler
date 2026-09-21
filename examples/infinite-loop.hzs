@@ -1,0 +1,6 @@
+>>> "Math"
+
+[ -> ] (
+  <<< "Infinite Loop!\n"
+  { randomInt(1, 100) < 10 } ( ->| )
+)
