@@ -15,8 +15,8 @@ enum Tokens {
   MAX_TERMINAL_TOKEN,
 
   Include, Statement, Declaration, Assignment,
-  If, Else, For, Print, Function, Expression, Condition,
-  Term, Factor, ForHead, IfHead,
+  If, Else, Loop, Print, Function, Expression, Condition,
+  Term, Factor, LoopHead, IfHead,
   MAX_TOKEN
 }
 
@@ -32,11 +32,11 @@ const followTokenSet = {
   [`${Tokens.Assignment}`]: statementFollow,
   [`${Tokens.If}`]: statementFollow,
   [`${Tokens.Else}`]: statementFollow,
-  [`${Tokens.For}`]: statementFollow,
   [`${Tokens.Print}`]: statementFollow,
 
   [`${Tokens.IfHead}`]: [Tokens.LeftBracket],
-  [`${Tokens.ForHead}`]: [Tokens.LeftBracket],
+  [`${Tokens.Loop}`]: statementFollow,
+  [`${Tokens.LoopHead}`]: [Tokens.RightSquareBracket],
 
   [`${Tokens.Expression}`]: expressionFollow,
   [`${Tokens.Condition}`]: [Tokens.RightCurlyBracket],

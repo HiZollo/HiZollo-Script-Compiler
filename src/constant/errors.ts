@@ -24,6 +24,7 @@ enum Errors {
   MissingArrow,
   InvalidComparation,
   InappropriateBreakStatement,
+  UnknownLoopSyntax,
   UseDisabledFunction
 }
 
@@ -48,6 +49,7 @@ const errorToString: TranslateMap = {
   [`${Errors.MissingArrow}`]: "遺漏箭頭",
   [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
   [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內",
+  [`${Errors.UnknownLoopSyntax}`]: "未知的迴圈語法",
   [`${Errors.UseDisabledFunction}`]: "使用被禁用的函數"
 }
 

@@ -345,11 +345,11 @@ class Parser {
       return;
     }
 
-    // 左中括號表示為 For 敘述
+    // 左中括號表示為迴圈
     if (this.nowTokenIs(Tokens.LeftSquareBracket)) {
       this.movePointerToNext();
-      // 檢查 For 敘述
-      this.For();
+      // 檢查迴圈敘述
+      this.Loop();
       return;
     }
 
@@ -580,19 +580,39 @@ class Parser {
 
   }
 
-  // 檢查 For
-  private For(): void {
+  // 檢查迴圈
+  private Loop(): void {
     // 進入區塊
     this.nowLevel++;
-    // 檢查 For 的開頭
-    this.ForHead();
 
-    // 必需接續左括號表示 For 區塊
+    // 檢查迴圈種類
+    if (this.nowTokenIs(Tokens.Arrow)) {
+      this.InfiniteLoopHead();
+    } else if (this.nowTokenIs(Tokens.LeftCurlyBracket)) {
+      this.WhileHead();
+    } else if (this.nowTokenIs(Tokens.Identifier)) {
+      this.ForHead();
+    } else {
+      ThrowError(this, Errors.UnknownLoopSyntax, this.nowToken);
+      skip(this, Tokens.LoopHead)
+    }
+
+    // 檢查結尾的 ] 
+    if (this.nowTokenIs(Tokens.RightSquareBracket)) {
+      this.movePointerToNext();
+    } else {
+      ThrowError(this, Errors.MissingRightSquareBracket, this.nowToken);
+      skip(this, Tokens.Loop);
+      return; // 少了 ] 就放棄這個迴圈
+    }
+
+    // 檢查區塊開始
     if (this.nowTokenIs(Tokens.LeftBracket)) {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.Statement);
+      skip(this, Tokens.Loop);
+      return;
     }
 
     this.buildCode("{");
@@ -620,6 +640,31 @@ class Parser {
     this.leaveBlock();
   }
 
+  // 無窮迴圈開頭的檢查
+  private InfiniteLoopHead(): void {
+    this.movePointerToNext();
+    this.buildCode("while(true)");
+  }
+
+  // 條件迴圈開頭的檢查
+  private WhileHead(): void {
+    this.movePointerToNext();
+    this.buildCode("while(");
+
+    this.Condition();
+
+    // 必須以 } 結束條件
+    if (this.nowTokenIs(Tokens.RightCurlyBracket)) {
+      this.movePointerToNext();
+    } else {
+      ThrowError(this, Errors.MissingRightCurlyBracket, this.nowToken);
+      skip(this, Tokens.LoopHead);
+      return;
+    }
+
+    this.buildCode(")");
+  }
+
   // For 開頭的檢查
   private ForHead(): void {
     // 作為遍歷迴圈的變數
@@ -629,7 +674,7 @@ class Parser {
     // 檢查識別字，但不做是否宣告的檢查
     this.Identifier(false);
     if (!indexVar) {
-      skip(this, Tokens.ForHead);
+      skip(this, Tokens.LoopHead);
       return;
     }
 
@@ -638,7 +683,7 @@ class Parser {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingAssignOperator, this.nowToken);
-      skip(this, Tokens.ForHead);
+      skip(this, Tokens.LoopHead);
     }
 
     this.buildCode("=");
@@ -651,7 +696,7 @@ class Parser {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingArrow, this.nowToken);
-      skip(this, Tokens.ForHead);
+      skip(this, Tokens.LoopHead);
       return;
     }
 
@@ -659,13 +704,6 @@ class Parser {
     this.Expression();
     this.buildCode(`;++${makeId(indexVar.value, this.nowLevel)})`);
 
-    // 以右括號做結束
-    if (this.nowTokenIs(Tokens.RightSquareBracket)) {
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingRightSquareBracket, this.nowToken);
-      skip(this, Tokens.ForHead);
-    }
     // 此時才宣告變數，避免有人在箭頭兩邊的敘述就使用遍歷迴圈的變數但檢查不到
     this.declareVariable(indexVar);
   }
