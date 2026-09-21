@@ -28,7 +28,7 @@ class Scanner {
 
     // 如果還沒到行尾，回傳當下字元
     if (this.charPosition < this.currentLine.length) {
-      this.nextWord = this.currentLine[this.charPosition];
+      this.nextWord = this.currentLine[this.charPosition]!;
       return;
     }
 
@@ -42,19 +42,21 @@ class Scanner {
     // 走到這代表 1. 已經到該行結尾 2. 這行不是最後一行
     // 將指標移動至下一行，如果下一行是空行那就繼續往下，直到碰到有東西
     do {
-      this.currentLine = this.source[this.linePosition++];
+      const line = this.source[this.linePosition++];
       // 碰到 undefined 就代表走到底了，結束
-      if (this.currentLine === undefined) {
+      if (line === undefined) {
         this.charPosition = 0;
         this.currentLine = '';
         this.nextWord = -1;
         return;
       }
+
+      this.currentLine = line;
     } while (!this.currentLine.length);
 
     // 重設指標位置至行首並讀取
     this.charPosition = 0;
-    this.nextWord = this.currentLine[this.charPosition];
+    this.nextWord = this.currentLine[this.charPosition]!;
   }
 
   // 解析下一個 token 的函式

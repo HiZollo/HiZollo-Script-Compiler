@@ -13,12 +13,16 @@ export interface BuildResult {
 }
 
 export interface CompilerOptions {
-  includes: PathMap,
+  includes: PathMap
   disabledFunctions: string[]
 }
 
 export interface PathMap {
   [key: string]: string
+}
+
+export interface PathMapWithCore extends PathMap {
+  core: string
 }
 
 export interface ErrorOutput {

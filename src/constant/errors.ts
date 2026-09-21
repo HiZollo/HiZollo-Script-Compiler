@@ -55,7 +55,9 @@ const errorToString: TranslateMap = {
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {
   if (!token) {
-    token = parser['tokens'][parser['tokens'].length-1];
+    const lastToken = parser['tokens'][parser['tokens'].length-1];
+    if (!lastToken) return;
+    token = lastToken
   }
   parser.errorCount++;
   let output: string = '****';
@@ -66,14 +68,16 @@ function ThrowError(parser: Parser, errorType: Errors, token: Token | null): voi
   for (let i = 0; i<token.value.length; i++) {
     output += '~';
   }
+  const errorText = errorToString[errorType]
+  if (!errorText) return
   parser.errorMessages.textify +=
     fiveDigits(token.left)+parser.getSource()[token.left-1]
     + '\n' +
-    `${output} ${errorToString[errorType]}`
+    `${output} ${errorText}`
     + '\n';
   parser.errorMessages.errors.push({
     error: errorType,
-    errorText: errorToString[errorType],
+    errorText,
     line: token.left,
     column: token.right,
     token: token
@@ -83,6 +87,8 @@ function ThrowError(parser: Parser, errorType: Errors, token: Token | null): voi
 function skip(parser: Parser, nowToken: Tokens): void {
   if (!parser.nowToken) return;
   const followToken = followTokenSet[nowToken];
+  if (!followToken) return;
+
   while (parser.nowToken && !followToken.includes(parser.nowToken.token)) {
     parser['movePointerToNext']();
   }

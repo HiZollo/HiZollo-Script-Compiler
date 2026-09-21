@@ -25,7 +25,7 @@ const expressionFollow = [...statementFollow, Tokens.RightSquareBracket, Tokens.
 const termFollow = [ Tokens.Plus, Tokens.Minus, ...expressionFollow ];
 const factorFollow = [ Tokens.Multiply, Tokens.Divide, ...termFollow ];
 
-const followTokenSet = {
+const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.Include}`]: statementFollow,
   [`${Tokens.Statement}`]: statementFollow,
   [`${Tokens.Declaration}`]: statementFollow,
@@ -58,7 +58,10 @@ class Token {
 
     while (!this.right) {
       this.left--;
-      this.right = scanner.getSource()[this.left-1]?.length;
+      const previousLine = scanner.getSource()[this.left-1];
+      if (previousLine === undefined) throw new Error("TOKEN_POSITION_CALCULATION_FAILED")
+
+      this.right = previousLine.length
     }
     this.value = value;
   }

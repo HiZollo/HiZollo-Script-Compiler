@@ -1,6 +1,6 @@
 import { Scanner } from './structure/scanner';
 import { Parser } from './structure/parser';
-import type { CompilerOptions, CompileResult, PathMap } from './types/interfaces';
+import type { CompilerOptions, CompileResult, PathMapWithCore } from './types/interfaces';
 import { minify } from 'uglify-js';
 
 const bootstrapCode = minify(`
@@ -66,7 +66,7 @@ function __hzs_invoke(name, ...args) {
 
 class Compiler {
   private parser: Parser;
-  private includes: PathMap;
+  private includes: PathMapWithCore;
   private disabledFunctions
 
   constructor({ includes = {}, disabledFunctions = [] }: CompilerOptions) {

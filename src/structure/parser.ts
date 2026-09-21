@@ -2,31 +2,31 @@ import { Scanner } from './scanner';
 import { Identifier, IdentifierStack } from './identifier';
 import { Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
-import type { PathMap, ErrorOutput } from '../types/interfaces';
+import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
 
 class Parser {
-  private getToken: () => Token | null;
-  private source: string[];
-  private tokens: Token[];
-  private pointer: number;
+  private getToken: () => Token | null = () => null;
+  private source: string[] = [];
+  private tokens: Token[] = [];
+  private pointer: number = -1;
   private endImport: boolean = false;
   private insideLoop: boolean = false;
   private nowLevel: number = 0;
   private idStack: IdentifierStack = new IdentifierStack();
-  private includePath: PathMap;
+  private includePath: PathMapWithCore;
   private disabledFunctions: string[];
   private importedModule: string[] = [];
   private bootstrapCode: string;
 
   public nowToken: Token | null = null;
-  public errorCount: number;
-  public errorMessages: ErrorOutput;
+  public errorCount: number = 0;
+  public errorMessages: ErrorOutput = { textify: '', errors: [] };
   public result: string = '';
   public moduleCode: string = '';
   public transpiledCode: string = '';
 
-  constructor(includePath: { [key: string]: string }, disabledFunctions: string[], bootstrapCode: string) {
+  constructor(includePath: PathMapWithCore, disabledFunctions: string[], bootstrapCode: string) {
     this.includePath = includePath;
     this.disabledFunctions = disabledFunctions;
     this.bootstrapCode = bootstrapCode
@@ -77,13 +77,13 @@ class Parser {
   // 將指向某 Token 的指標移動至下一個
   private movePointerToNext(): void {
     this.pointer++;
-    this.nowToken = this.tokens[this.pointer];
+    this.nowToken = this.tokens[this.pointer] ?? null;
   }
 
   // 將指向某 Token 的指標移動至前一個
   private revert(): void {
     this.pointer--;
-    this.nowToken = this.tokens[this.pointer];
+    this.nowToken = this.tokens[this.pointer] ?? null;
   }
 
   // 檢查現在的 Token 是否為某些
@@ -160,9 +160,9 @@ class Parser {
     this.addModuleCode(coreModuleCode.trim() + '\n');
 
     // 如果 Scanner 不小心掃到尾巴，這裡把他拿掉
-    const lastTokenValue = this.tokens[this.tokens.length - 1].value;
+    const lastToken = this.tokens[this.tokens.length - 1]
     // @ts-ignore
-    if (lastTokenValue === -1 || lastTokenValue === '-1') this.tokens.pop();
+    if (!lastToken || lastToken.value === -1 || lastToken.value === '-1') this.tokens.pop();
 
     // 指標開始移動
     this.movePointerToNext();
@@ -398,13 +398,13 @@ class Parser {
   // 函式敘述檢查
   private Function(): void {
     // 檢查函式是否被禁用
-    if (this.functionDisabled(this.nowToken)) {
+    if (this.functionDisabled(this.nowToken!)) {
       ThrowError(this, Errors.UseDisabledFunction, this.nowToken);
       skip(this, Tokens.Function)
       return;
     }
 
-    this.buildCode(`__hzs_invoke("${this.nowToken.value}"`)
+    this.buildCode(`__hzs_invoke("${this.nowToken!.value}"`)
     this.movePointerToNext();
 
     // 檢查是否跟隨左括號
@@ -849,7 +849,7 @@ class Parser {
   private String(): void {
     // 是字串就建碼
     if (this.nowTokenIs(Tokens.String)) {
-      this.buildCode(this.nowToken.value);
+      this.buildCode(this.nowToken!.value);
       this.movePointerToNext();
       return;
     }
