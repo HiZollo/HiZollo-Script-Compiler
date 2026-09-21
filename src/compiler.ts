@@ -1,6 +1,6 @@
 import { Scanner } from './structure/scanner';
 import { Parser } from './structure/parser';
-import { CompilerOptions, CompileResult, PathMap } from './types/interfaces';
+import type { CompilerOptions, CompileResult, PathMap } from './types/interfaces';
 import { minify } from 'uglify-js';
 
 const bootstrapCode = minify(`

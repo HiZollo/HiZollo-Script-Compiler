@@ -1,7 +1,7 @@
 import type { Parser } from '../structure/parser';
 import type { Token, Tokens } from './token';
 import { followTokenSet } from './token';
-import { TranslateMap } from '../types/interfaces';
+import type { TranslateMap } from '../types/interfaces';
 
 enum Errors {
   UnknownStatement,

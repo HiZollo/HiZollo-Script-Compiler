@@ -2,7 +2,7 @@ import { Scanner } from './scanner';
 import { Identifier, IdentifierStack } from './identifier';
 import { Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
-import { PathMap, ErrorOutput } from '../types/interfaces';
+import type { PathMap, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
 
 class Parser {

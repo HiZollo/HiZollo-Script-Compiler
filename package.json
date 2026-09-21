@@ -22,6 +22,7 @@
     "dist"
   ],
   "scripts": {
+    "type-check": "tsc --noEmit",
     "test": "node test",
     "build": "tsdown"
   },

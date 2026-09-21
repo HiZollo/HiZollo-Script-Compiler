@@ -1,5 +1,5 @@
 import { Worker } from 'worker_threads';
-import { ExecuteOptions, ExecutionResult } from '../types/interfaces';
+import type { ExecuteOptions, ExecutionResult } from '../types/interfaces';
 
 enum ExecutionErrorCode {
   WORKER_ERROR,

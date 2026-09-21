@@ -1,5 +1,5 @@
 import type { Scanner } from '../structure/scanner';
-import { TokenOption } from '../types/interfaces';
+import type { TokenOption } from '../types/interfaces';
 
 enum Tokens {
   ERROR,
