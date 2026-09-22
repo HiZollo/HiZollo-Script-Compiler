@@ -13,7 +13,7 @@
         "default": "./dist/index.mjs"
       },
       "require": {
-        "type": "./dist/index.d.cts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
     }
