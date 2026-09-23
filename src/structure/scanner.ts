@@ -61,15 +61,16 @@ class Scanner {
 
   // 解析下一個 token 的函式
   public nextToken(): Token | null {
-    // 如果下個字是 -1，代表已到檔案結尾
-    if (this.nextWord === -1) return null;
-
     // 這個 token 的值
     let tokenValue: string = '';
+
     while (true) {
+      // 如果下個字是 -1，代表已到檔案結尾
+      if (this.nextWord === -1) return null;
+
       const nowLine = this.linePosition;
       // 檢查是否為 Identifier
-      if (/[A-Za-z]/.test(this.nextWord)) {
+      if (typeof this.nextWord === 'string' && /[A-Za-z]/.test(this.nextWord)) {
         // 繼續往下讀取直到碰到非識別字可用字符
         do {
           tokenValue += this.nextWord;
@@ -82,7 +83,7 @@ class Scanner {
         return this.makeToken(Tokens.Identifier, tokenValue);
       }
       // 檢查是否為數字
-      if (/\d+/.test(this.nextWord)) {
+      if (typeof this.nextWord === 'string' && /\d+/.test(this.nextWord)) {
         // 讀取整數部分
         do {
           tokenValue += this.nextWord;
