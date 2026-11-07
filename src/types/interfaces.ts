@@ -42,14 +42,23 @@ export interface TranslateMap {
   [index: string]: string
 }
 
+export type ExecutionOutputLimitBehavior = 'halt' | 'stop' | 'roll';
+
+export interface ExecutionOutputLimitOptions {
+  maxOutputSize: number;
+  onLimit?: ExecutionOutputLimitBehavior;
+}
+
 export interface ExecuteOptions {
   maxExecutionTime: number
   resourceLimits?: {
-    maxOldGenerationSizeMb?: number;
-    maxYoungGenerationSizeMb?: number;
-    stackSizeMb?: number;
-    codeRangeSizeMb?: number;
+    maxOldGenerationSizeMb?: number
+    maxYoungGenerationSizeMb?: number
+    stackSizeMb?: number
+    codeRangeSizeMb?: number
   }
+  stdout?: number | ExecutionOutputLimitOptions
+  stderr?: number | ExecutionOutputLimitOptions
   argv?: string[]
 }
 
@@ -58,6 +67,10 @@ export interface ExecutionResult {
   stderr: string;
   exitCode: number;
   executionTime: number;
+  outputLimitExceeded: {
+    stdout: boolean;
+    stderr: boolean;
+  };
 }
 
 export interface TokenOption {
