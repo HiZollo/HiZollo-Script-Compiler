@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "type-check": "tsc --noEmit",
-    "test": "node test",
+    "test": "node --test test",
     "build": "tsdown"
   },
   "repository": {

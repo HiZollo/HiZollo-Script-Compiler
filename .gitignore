@@ -9,5 +9,5 @@ out.js
 test.hzs
 rulebook.txt
 
-
 *.swp
+test/corpus
