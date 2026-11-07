@@ -5,7 +5,7 @@ import { ExecutionWorker, ExecutionError, ExecutionTimeoutError, ExecutionErrorC
 
 test('executionWorker: stdout', async () => {
   const result = await new ExecutionWorker(`process.stdout.write("hello");`)
-    .execute({ maxExecutionTime: 1000});
+    .execute({ maxExecutionTime: 1000 });
 
   assert.equal(result.stdout, 'hello');
   assert.equal(result.stderr, '');
