@@ -3,7 +3,8 @@ import type { ExecuteOptions, ExecutionResult } from '../types/interfaces';
 
 enum ExecutionErrorCode {
   WORKER_ERROR,
-  EXCEED_RUNTIME_LIMIT
+  EXCEED_RUNTIME_LIMIT,
+  EXCEED_MEMORY_LIMIT
 }
 
 class ExecutionError extends Error {
@@ -34,6 +35,7 @@ class ExecutionWorker {
         eval: true,
         stdout: true,
         stderr: true,
+        resourceLimits: options.resourceLimits,
         argv: options.argv ?? []
       });
 
@@ -49,19 +51,27 @@ class ExecutionWorker {
       })
 
       if (options.maxExecutionTime > 0) {
-        var timeout = setTimeout(() => {
+        var timeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
           reject(new ExecutionTimeoutError(options.maxExecutionTime));
           worker.terminate();
         }, options.maxExecutionTime);
       }
 
       worker.once('error', (err: Error) => {
-        if (timeout) clearTimeout(timeout);
-        reject(new ExecutionError(err.message, ExecutionErrorCode.WORKER_ERROR));
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+
+        const code = (err as NodeJS.ErrnoException).code === 'ERR_WORKER_OUT_OF_MEMORY'
+          ? ExecutionErrorCode.EXCEED_MEMORY_LIMIT
+          : ExecutionErrorCode.WORKER_ERROR;
+
+        reject(new ExecutionError(err.message, code))
       });
 
       worker.once('exit', (exitCode: number) => {
-        clearTimeout(timeout);
+        if (timeout) clearTimeout(timeout);
         resolve({
           stdout,
           stderr,

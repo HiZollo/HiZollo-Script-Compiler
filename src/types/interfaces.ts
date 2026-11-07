@@ -44,6 +44,12 @@ export interface TranslateMap {
 
 export interface ExecuteOptions {
   maxExecutionTime: number
+  resourceLimits?: {
+    maxOldGenerationSizeMb?: number;
+    maxYoungGenerationSizeMb?: number;
+    stackSizeMb?: number;
+    codeRangeSizeMb?: number;
+  }
   argv?: string[]
 }
 
