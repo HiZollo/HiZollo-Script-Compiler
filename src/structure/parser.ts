@@ -88,8 +88,8 @@ class Parser {
 
   // 檢查現在的 Token 是否為某些
   private nowTokenIs(...tokens: Tokens[]): boolean {
-    if (!this.nowToken?.token) return false;
-    return tokens.includes(this.nowToken?.token);
+    if (!this.nowToken) return false;
+    return tokens.includes(this.nowToken.token);
   }
 
   // 宣告變數
