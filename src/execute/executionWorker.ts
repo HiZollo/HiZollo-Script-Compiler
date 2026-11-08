@@ -15,7 +15,7 @@ class ExecutionError extends Error {
   }
 }
 
-interface ExecutionOutput {
+interface ExecutionOutputCapture {
   output: string;
   stopped: boolean;
   exceeded: boolean;
@@ -33,8 +33,8 @@ class ExecutionTimeoutError extends ExecutionError {
 }
 
 class ExecutionOutputExceededLimitError extends ExecutionError {
-  constructor(public readonly output: ExecutionOutput) {
-    super(`Execution exceeded the ${output.name} output limit`, output.code);
+  constructor(public readonly capture: ExecutionOutputCapture) {
+    super(`Execution exceeded the ${capture.name} output limit`, capture.code);
   }
 }
 
@@ -49,7 +49,7 @@ class ExecutionWorker {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
 
-      function getOutputConfig(value: number | ExecutionOutputLimitOptions | undefined, name: string): Pick<ExecutionOutput, 'limit' | 'onLimit'> {
+      function getOutputConfig(value: number | ExecutionOutputLimitOptions | undefined, name: string): Pick<ExecutionOutputCapture, 'limit' | 'onLimit'> {
         if (value === undefined) return { limit: undefined, onLimit: 'stop'};
 
         const maxOutputSize = typeof value === 'number' ? value : value.maxOutputSize;
@@ -68,7 +68,7 @@ class ExecutionWorker {
         return { limit: maxOutputSize, onLimit };
       };
 
-      const stdout: ExecutionOutput = {
+      const stdout: ExecutionOutputCapture = {
         output: '',
         stopped: false,
         exceeded: false,
@@ -77,7 +77,7 @@ class ExecutionWorker {
         ...getOutputConfig(options.stdout, 'stdout')
       };
 
-      const stderr: ExecutionOutput = {
+      const stderr: ExecutionOutputCapture = {
         output: '',
         stopped: false,
         exceeded: false,
@@ -96,7 +96,7 @@ class ExecutionWorker {
 
       let terminationRequested = false;
 
-      function captureOutput(target: ExecutionOutput, chunk: string) {
+      function captureOutput(target: ExecutionOutputCapture, chunk: string) {
         if (target.stopped || chunk.length === 0) return;
 
         if (target.limit === undefined) {
@@ -173,5 +173,5 @@ class ExecutionWorker {
 
 }
 
-export type { ExecutionOutput }
+export type { ExecutionOutputCapture }
 export { ExecutionError, ExecutionTimeoutError, ExecutionOutputExceededLimitError, ExecutionWorker, ExecutionErrorCode }
