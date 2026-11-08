@@ -50,7 +50,7 @@ const ew = new ExecutionWorker(code: string)
 ### 屬性
 - `maxExecutionTime`：數字，代表設定的時間上限。
 
-## ExecutionOutputExceedLimitError
+## ExecutionOutputExceededLimitError
 ### 說明
 [`ExecutionWorker`](#executionworker) 的 stdout 或是 stderr 輸出過長時拋出的自訂例外類別，繼承了 [`ExecutionError`](#executionerror)。
 
@@ -87,6 +87,7 @@ const ew = new ExecutionWorker(code: string)
 - `MissingArrow`：遺漏箭頭
 - `InvalidComparation`：關係運算子錯誤
 - `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
+- `UnknownLoopSyntax`：未知的迴圈語法
 - `UseDisabledFunction`：使用被禁用的函數
 
 ## Tokens
@@ -144,7 +145,7 @@ const ew = new ExecutionWorker(code: string)
 
 ### ExecutionOutputLimitOptions
 一個物件，有以下的鍵值對：
-- `maxOutputSize`：輸出的上限，單位是 JavaScript 字元。
+- `maxOutputSize`：輸出的上限，單位是一個形素，也就是顯示出來佔一格字的東西。
 - `onLimit`：超過上限時採取的行動，是一個 [`ExecutionOutputLimitBehavior`](#executionoutputlimitbehavior)。
 
 ### ExecuteOptions
@@ -165,6 +166,6 @@ const ew = new ExecutionWorker(code: string)
 - `stderr`：ExecutionWorker 執行後輸出到標準錯誤的內容。
 - `exitCode`：ExecutionWorker 執行的程式的結束狀態。
 - `executionTime`：ExecutionWorker 執行程式的總運行時間。
-- `outputLimitExceed`：一個物件，有以下的鍵值對：
+- `outputLimitExceeded`：一個物件，有以下的鍵值對：
   - `stdout`：布林值，表示執行過程中，stdout 輸出超過了上限。
   - `stderr`：布林值，表示執行過程中，stderr 輸出超過了上限。
