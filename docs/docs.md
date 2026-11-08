@@ -47,10 +47,23 @@ const ew = new ExecutionWorker(code: string)
 ### 說明
 [`ExecutionWorker`](#executionworker) 超時時拋出的自訂例外類別，繼承了 [`ExecutionError`](#executionerror)。
 
+### 屬性
+- `maxExecutionTime`：數字，代表設定的時間上限。
+
+## ExecutionOutputExceedLimitError
+### 說明
+[`ExecutionWorker`](#executionworker) 的 stdout 或是 stderr 輸出過長時拋出的自訂例外類別，繼承了 [`ExecutionError`](#executionerror)。
+
+### 屬性
+- `capture`：一個 [`ExecutionOutputCapture`](#executionoutputcapture) 物件。
+
 ## ExecutionErrorCode
 一個表示 [`ExecutionWorker`](#executionworker) 例外狀態的代號列舉，內容如下：
 - `WORKER_ERROR`：Worker 運行本身的錯誤
 - `EXCEED_RUNTIME_LIMIT`：程式運行超過 ExecutionWorker 設定的時間上限
+- `EXCEED_MEMORY_LIMIT`：程式使用資源超過 ExecutionWorker 設定的上限
+- `EXCEED_STDOUT_LIMIT`：程式輸出的 stdout 超過 ExecutionWorker 設定的上限
+- `EXCEED_STDERR_LIMIT`：程式輸出的 stderr 超過 ExecutionWorker 設定的上限
 
 ## Errors
 一個表示錯誤內容的列舉，內容與對應中文敘述如下：
@@ -113,9 +126,38 @@ const ew = new ExecutionWorker(code: string)
 - `column`：數字，對應到此錯誤發生之符號最右邊於該行之索引值。
 - `token`：[`Tokens`](#tokens) 列舉的值，且應小於 `Tokens.MAX_TERMINAL_TOKEN`，表示發生錯誤之 Token 值。
 
+### ExecutionOutputCapture
+一個物件，有以下的鍵值對：
+- `output`：字串，目前擷取到的輸出內容。
+- `stopped`：布林值，表示是否停止擷取輸出。
+- `exceeded`：布林值，表示是否超出擷取上限。
+- `name`：字串，此串流的名稱。
+- `code`：一個 [`ExecutionErrorCode`](#executionerrorcode) 所列舉的值，表示如果行為設置為 `'halt'` 的話串流超出上限要拋出的錯誤類型。
+- `limit`：此串流的輸出上限長度，有上限會是一個數字，無上限則是 `undefined`。
+- `onLimit`：一個 [`ExecutionOutputLimitBehavior`](#executionoutputlimitbehavior)
+
+### ExecutionOutputLimitBehavior
+用來指示 [`ExecutionWorker`](#executionworker) 輸出到達限制時採取的策略，可以是以下三種字串：
+- `'halt'`：直接結束並拋出錯誤。
+- `'stop'`：停止繼續輸出，但不會結束執行。
+- `'roll'`：丟棄最舊的輸出，只保留最後面的字元剛剛好在上限。
+
+### ExecutionOutputLimitOptions
+一個物件，有以下的鍵值對：
+- `maxOutputSize`：輸出的上限，單位是 JavaScript 字元。
+- `onLimit`：超過上限時採取的行動，是一個 [`ExecutionOutputLimitBehavior`](#executionoutputlimitbehavior)。
+
 ### ExecuteOptions
 一個物件，有以下的鍵值對：
 - `maxExecutionTime`：此程式的最大執行時間，以毫秒計，輸入 0 以下的數字來表示無限制。
+- `resourceLimits`：可選。是一個物件，有以下的鍵值對：
+  - `maxOldGenerationSizeMb`：數字，可選。
+  - `maxYoungGenerationSizeMb`：數字，可選。
+  - `stackSizeMb`：數字，可選。
+  - `codeRangeSizeMb`：數字，可選。
+- `stdout`：可選。控制 stdout 的輸出文字上限。是一個數字或是 [`ExecutionOutputLimitOptions`](#executionoutputlimitoptions)。是數字時，上限視作那個數字，超過上限採取的行動則是 `'stop'`。
+- `stderr`：可選。控制 stderr 的輸出文字上限。是一個數字或是 [`ExecutionOutputLimitOptions`](#executionoutputlimitoptions)。是數字時，上限視作那個數字，超過上限採取的行動則是 `'stop'`。
+- `argv`：可選。傳給底下程式的命令列參數，是一個字串陣列。
 
 ### ExecutionResult
 一個物件，有以下的鍵值對：
@@ -123,3 +165,6 @@ const ew = new ExecutionWorker(code: string)
 - `stderr`：ExecutionWorker 執行後輸出到標準錯誤的內容。
 - `exitCode`：ExecutionWorker 執行的程式的結束狀態。
 - `executionTime`：ExecutionWorker 執行程式的總運行時間。
+- `outputLimitExceed`：一個物件，有以下的鍵值對：
+  - `stdout`：布林值，表示執行過程中，stdout 輸出超過了上限。
+  - `stderr`：布林值，表示執行過程中，stderr 輸出超過了上限。
