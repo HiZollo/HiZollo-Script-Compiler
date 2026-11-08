@@ -1,40 +1,11 @@
-import { Worker } from 'worker_threads';
+import { Worker } from 'node:worker_threads';
 import type { ExecuteOptions, ExecutionResult, ExecutionOutputLimitBehavior, ExecutionOutputLimitOptions } from '../types/interfaces';
-
-enum ExecutionErrorCode {
-  WORKER_ERROR,
-  EXCEED_RUNTIME_LIMIT,
-  EXCEED_MEMORY_LIMIT,
-  EXCEED_STDOUT_LIMIT,
-  EXCEED_STDERR_LIMIT
-}
-
-class ExecutionError extends Error {
-  constructor(message: string, public readonly code: ExecutionErrorCode) {
-    super(message);
-  }
-}
-
-interface ExecutionOutputCapture {
-  output: string;
-  stopped: boolean;
-  exceeded: boolean;
-  name: String;
-  code: ExecutionErrorCode;
-  limit: number | undefined;
-  onLimit: ExecutionOutputLimitBehavior;
-}
-
+import { ExecutionError, ExecutionErrorCode } from './executionError';
+import { captureOutput, createOutputCapture, ExecutionOutputExceededLimitError, type ExecutionOutputCapture } from './outputCapture';
 
 class ExecutionTimeoutError extends ExecutionError {
   constructor(public readonly maxExecutionTime: number) {
     super(`Execution exceeded the maximum execution time of ${maxExecutionTime}ms`, ExecutionErrorCode.EXCEED_RUNTIME_LIMIT);
-  }
-}
-
-class ExecutionOutputExceededLimitError extends ExecutionError {
-  constructor(public readonly capture: ExecutionOutputCapture) {
-    super(`Execution exceeded the ${capture.name} output limit`, capture.code);
   }
 }
 
@@ -52,6 +23,7 @@ class ExecutionWorker {
       function getOutputConfig(value: number | ExecutionOutputLimitOptions | undefined, name: string): Pick<ExecutionOutputCapture, 'limit' | 'onLimit'> {
         if (value === undefined) return { limit: undefined, onLimit: 'stop'};
 
+
         const maxOutputSize = typeof value === 'number' ? value : value.maxOutputSize;
         const onLimit = typeof value === 'number'
           ? 'stop'
@@ -61,30 +33,24 @@ class ExecutionWorker {
           throw new TypeError(`INVALID_${name.toUpperCase()}_LIMIT_BEHAVIOR`);
         }
 
-        if (maxOutputSize < 0) {
+        if (maxOutputSize < 0 || isNaN(maxOutputSize)) {
           return { limit: undefined, onLimit };
         }
 
-        return { limit: maxOutputSize, onLimit };
+        return { limit: Math.floor(maxOutputSize), onLimit };
       };
 
-      const stdout: ExecutionOutputCapture = {
-        output: '',
-        stopped: false,
-        exceeded: false,
+      const stdout = createOutputCapture({
         name: 'stdout',
         code: ExecutionErrorCode.EXCEED_STDOUT_LIMIT,
         ...getOutputConfig(options.stdout, 'stdout')
-      };
+      })
 
-      const stderr: ExecutionOutputCapture = {
-        output: '',
-        stopped: false,
-        exceeded: false,
+      const stderr = createOutputCapture({
         name: 'stderr',
         code: ExecutionErrorCode.EXCEED_STDERR_LIMIT,
         ...getOutputConfig(options.stderr, 'stderr')
-      };
+      })
 
       const worker = new Worker(this.code, {
         eval: true,
@@ -96,46 +62,24 @@ class ExecutionWorker {
 
       let terminationRequested = false;
 
-      function captureOutput(target: ExecutionOutputCapture, chunk: string) {
-        if (target.stopped || chunk.length === 0) return;
-
-        if (target.limit === undefined) {
-          target.output += chunk;
-          return;
-        }
-
-        if (target.onLimit === 'roll') {
-          target.output += chunk;
-          if (target.output.length > target.limit) target.exceeded = true;
-          target.output = target.limit === 0 ? '' : target.output.slice(-target.limit);
-          return;
-        }
-
-        const remaining = target.limit - target.output.length;
-        if (remaining > 0) target.output += chunk.slice(0, remaining);
-
-        if (chunk.length > remaining) {
-          target.exceeded = true;
-          target.stopped = true;
-
-          if (target.onLimit === 'halt' && !terminationRequested) {
-            terminationRequested = true;
-            reject(new ExecutionOutputExceededLimitError(target));
-            worker.terminate();
-          }
-        }
-      };
+      function onHalt(target: ExecutionOutputCapture) {
+        if (terminationRequested) return
+        terminationRequested = true;
+        reject(new ExecutionOutputExceededLimitError(target));
+        worker.terminate();
+      }
 
       worker.stdout.on('data', chunk => {
-        captureOutput(stdout, chunk.toString('utf-8'))
+        captureOutput(stdout, chunk, onHalt)
       })
 
       worker.stderr.on('data', chunk => {
-        captureOutput(stderr, chunk.toString('utf-8'))
+        captureOutput(stderr, chunk, onHalt)
       })
 
       if (options.maxExecutionTime > 0) {
         var timeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+          terminationRequested = true;
           reject(new ExecutionTimeoutError(options.maxExecutionTime));
           worker.terminate();
         }, options.maxExecutionTime);
@@ -156,6 +100,8 @@ class ExecutionWorker {
 
       worker.once('exit', (exitCode: number) => {
         if (timeout) clearTimeout(timeout);
+        captureOutput(stdout, null, onHalt);
+        captureOutput(stderr, null, onHalt);
         resolve({
           stdout: stdout.output,
           stderr: stderr.output,
