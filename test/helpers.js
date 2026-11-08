@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { Compiler, ExecutionError, ExecutionErrorCode, ExecutionTimeoutError, ExecutionWorker, Errors } from '../dist/index.mjs';
+import { Compiler, ExecutionError, ExecutionErrorCode, ExecutionTimeoutError, ExecutionOutputExceededLimitError, ExecutionWorker, Errors } from '../dist/index.mjs';
 
-export { Compiler, ExecutionError, ExecutionErrorCode, ExecutionTimeoutError, ExecutionWorker, Errors }
+export { Compiler, ExecutionError, ExecutionErrorCode, ExecutionTimeoutError, ExecutionOutputExceededLimitError, ExecutionWorker, Errors }
 
 export const esm = await import('../dist/index.mjs');
 
