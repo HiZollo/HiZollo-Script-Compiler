@@ -473,34 +473,37 @@ class Parser {
     // 檢查是否為合法 If 開頭
     this.IfHead();
 
-    // 必須接續左括號表示 If 區塊
-    if (this.nowTokenIs(Tokens.LeftBracket)) {
-      this.buildCode("{");
-      // 進入區塊
-      this.nowLevel++;
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.If);
-    }
+    // 進入區塊
+    this.nowLevel++;
 
-    // 只要是這六種，就表示是一個敘述，進行檢查
-    // 否則就進行 If 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
-      this.Statement();
-    }
+    try {
+      // 必須接續左括號表示 If 區塊
+      if (this.nowTokenIs(Tokens.LeftBracket)) {
+        this.buildCode("{");
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+        skip(this, Tokens.If);
+      }
 
-    // 要用右括號為 If 做結尾
-    if (this.nowTokenIs(Tokens.RightBracket)) {
-      this.buildCode('}');
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-      skip(this, Tokens.If);
-    }
+      // 只要是這六種，就表示是一個敘述，進行檢查
+      // 否則就進行 If 結尾的檢查
+      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
+        this.Statement();
+      }
 
-    // 離開區塊的清理動作
-    this.leaveBlock();
+      // 要用右括號為 If 做結尾
+      if (this.nowTokenIs(Tokens.RightBracket)) {
+        this.buildCode('}');
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingRightBracket, this.nowToken);
+        skip(this, Tokens.If);
+      }
+    } finally {
+      // 離開區塊的清理動作
+      this.leaveBlock();
+    }
 
     // 如果碰到斜線（除號），表示有 else if 或 else 區塊
     if (this.nowTokenIs(Tokens.Divide)) {
@@ -526,7 +529,7 @@ class Parser {
 
     // 必須以右大括號結尾
     if (this.nowTokenIs(Tokens.RightCurlyBracket)) {
-      this.buildCode(')');
+      this.buildCode(`)`);
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingRightCurlyBracket, this.nowToken);
@@ -555,100 +558,105 @@ class Parser {
 
   // 檢查 Else
   private Else(): void {
-    // 以左括號開始
-    if (this.nowTokenIs(Tokens.LeftBracket)) {
-      // 進入區塊
-      this.nowLevel++;
-      this.buildCode('else{');
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.Else);
+    // 進入區塊
+    this.nowLevel++;
+
+    try {
+      // 以左括號開始
+      if (this.nowTokenIs(Tokens.LeftBracket)) {
+        this.buildCode('else{');
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+        skip(this, Tokens.Else);
+      }
+
+      // 只要是這六種，就表示是一個敘述，進行檢查
+      // 否則就進行 Else 結尾的檢查
+      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
+        this.Statement();
+      }
+
+      // 要用右括號做結尾
+      if (this.nowTokenIs(Tokens.RightBracket)) {
+        this.buildCode('}');
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingRightBracket, this.nowToken);
+      }
+    } finally {
+      // 離開區塊的清理動作
+      this.leaveBlock();
     }
-
-    // 只要是這六種，就表示是一個敘述，進行檢查
-    // 否則就進行 Else 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
-      this.Statement();
-    }
-
-    // 要用右括號做結尾
-    if (this.nowTokenIs(Tokens.RightBracket)) {
-      this.buildCode('}');
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-    }
-
-    // 離開區塊的清理動作
-    this.leaveBlock();
-
   }
 
   // 檢查迴圈
   private Loop(): void {
     // 進入區塊
     this.nowLevel++;
-
-    // 檢查迴圈種類
-    if (this.nowTokenIs(Tokens.Arrow)) {
-      this.InfiniteLoopHead();
-    } else if (this.nowTokenIs(Tokens.LeftCurlyBracket)) {
-      this.WhileHead();
-    } else if (this.nowTokenIs(Tokens.Identifier)) {
-      this.ForHead();
-    } else {
-      ThrowError(this, Errors.UnknownLoopSyntax, this.nowToken);
-      skip(this, Tokens.LoopHead)
-    }
-
-    // 檢查結尾的 ] 
-    if (this.nowTokenIs(Tokens.RightSquareBracket)) {
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingRightSquareBracket, this.nowToken);
-      skip(this, Tokens.Loop);
-      return; // 少了 ] 就放棄這個迴圈
-    }
-
-    // 檢查區塊開始
-    if (this.nowTokenIs(Tokens.LeftBracket)) {
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.Loop);
-      return;
-    }
-
-    this.buildCode("{");
-
-    // 進入迴圈
     const prevLoopState = this.insideLoop;
-    this.insideLoop = true;
-    // 只要是這六種，就表示是一個敘述，進行檢查
-    // 否則就進行 For 結尾的檢查
-    while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
-      this.Statement();
-    }
-    // 退出本層迴圈
-    this.insideLoop = prevLoopState;
 
-    // 以右括號表示區塊結束
-    if (this.nowTokenIs(Tokens.RightBracket)) {
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-    }
+    try {
+      // 檢查迴圈種類
+      if (this.nowTokenIs(Tokens.Arrow)) {
+        this.InfiniteLoopHead();
+      } else if (this.nowTokenIs(Tokens.LeftCurlyBracket)) {
+        this.WhileHead();
+      } else if (this.nowTokenIs(Tokens.Identifier)) {
+        this.ForHead();
+      } else {
+        ThrowError(this, Errors.UnknownLoopSyntax, this.nowToken);
+        skip(this, Tokens.LoopHead)
+      }
 
-    this.buildCode("}");
-    // 離開區塊的清理
-    this.leaveBlock();
+      // 檢查結尾的 ] 
+      if (this.nowTokenIs(Tokens.RightSquareBracket)) {
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingRightSquareBracket, this.nowToken);
+        skip(this, Tokens.Loop);
+        return; // 少了 ] 就放棄這個迴圈
+      }
+
+      // 檢查區塊開始
+      if (this.nowTokenIs(Tokens.LeftBracket)) {
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+        skip(this, Tokens.Loop);
+        return;
+      }
+
+      this.buildCode("{");
+
+      // 進入迴圈
+      this.insideLoop = true;
+      // 只要是這六種，就表示是一個敘述，進行檢查
+      // 否則就進行 For 結尾的檢查
+      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
+        this.Statement();
+      }
+
+      // 以右括號表示區塊結束
+      if (this.nowTokenIs(Tokens.RightBracket)) {
+        this.movePointerToNext();
+      } else {
+        ThrowError(this, Errors.MissingRightBracket, this.nowToken);
+      }
+
+      this.buildCode("}");
+    } finally {
+      // 退出本層迴圈
+      this.insideLoop = prevLoopState;
+      // 離開區塊的清理
+      this.leaveBlock();
+    }
   }
 
   // 無窮迴圈開頭的檢查
   private InfiniteLoopHead(): void {
     this.movePointerToNext();
-    this.buildCode("while(true)");
+    this.buildCode(`while(true)`);
   }
 
   // 條件迴圈開頭的檢查
