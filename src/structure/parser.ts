@@ -1,5 +1,5 @@
 import { Scanner } from './scanner';
-import { Identifier, IdentifierStack } from './identifier';
+import { Identifier, IdentifierTable } from './identifier';
 import { Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
 import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
@@ -13,7 +13,7 @@ class Parser {
   private endImport: boolean = false;
   private insideLoop: boolean = false;
   private nowLevel: number = 0;
-  private idStack: IdentifierStack = new IdentifierStack();
+  private idTable: IdentifierTable = new IdentifierTable();
   private includePath: PathMapWithCore;
   private disabledFunctions: string[];
   private importedModule: string[] = [];
@@ -51,6 +51,9 @@ class Parser {
     this.result = '';
     this.moduleCode = '';
     this.transpiledCode = '';
+
+    this.idTable.clear();
+    this.nowLevel = 0;
   }
 
   // 取得下一個 Token，會自動跳過註解
@@ -94,10 +97,10 @@ class Parser {
 
   // 宣告變數
   private declareVariable(idToken: Token) {
-    // 從識別字堆疊中尋找此區域是否有相同變數名稱
-    const tmp = this.idStack.getId(idToken.value, this.nowLevel);
-    // 如果沒有，宣告成功
-    if (!tmp) return this.idStack.push(new Identifier(idToken, this.nowLevel));
+    // 嘗試宣告變數，如果此區域有相同變數名稱會失敗
+    const success = this.idTable.declare(new Identifier(idToken, this.nowLevel));
+    // 宣告成功就結束
+    if (success) return;
 
     // 如果有，擲出變數重複宣告錯誤
     ThrowError(this, Errors.RedeclareIdentifier, idToken);
@@ -106,12 +109,7 @@ class Parser {
 
   // 檢查指定變數的層級
   private getResolvedLevel(name: string): number | null {
-    let level = this.nowLevel;
-    while (level > 0) {
-      if (this.idStack.getId(name, level)) return level;
-      level--;
-    }
-    return null; // 找不到
+    return this.idTable.getVisibleId(name)?.level ?? null;
   }
 
   // 檢查是否有禁用此函式
@@ -122,8 +120,7 @@ class Parser {
   // 當離開一程式碼區域時做的清理動作
   private leaveBlock(): void {
     // 將識別字堆疊中此區域宣告的的識別字全部移除
-    while (this.idStack.top() && this.idStack.top()?.level == this.nowLevel)
-      this.idStack.pop();
+    this.idTable.leaveScope(this.nowLevel);
 
     // 往外一層
     this.nowLevel--;
@@ -192,9 +189,6 @@ class Parser {
       .replace("__HZS_DISABLED_FUNCTIONS_LIST__", disabledFunctionsList)
 
     this.result = `${bootstrapCode}${this.moduleCode}${this.transpiledCode}`
-
-    // 清空識別字堆疊，以利第二次使用
-    while (this.idStack.top()) this.idStack.pop();
   }
 
   /** 以下全為規則 **/

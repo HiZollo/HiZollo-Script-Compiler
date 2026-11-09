@@ -10,30 +10,73 @@ class Identifier {
   }
 }
 
-class IdentifierStack {
-  public stack: Identifier[] = [];
-  constructor() { }
+class IdentifierTable {
+  // Level -> Name -> Identifier
+  private byScope = new Map<number, Map<string, Identifier>>();
+
+  // Name -> Active Bindings
+  private byName = new Map<string, Identifier[]>();
 
   getId(name: string, level: number): Identifier | undefined {
-    return this.stack.find(
-      id => id.name === name && id.level == level
-    );
+      return this.byScope.get(level)?.get(name);
   }
 
-  push(id: Identifier): void {
-    this.stack.push(id);
+  getVisibleId(name: string): Identifier | undefined {
+      const bindings = this.byName.get(name);
+      return bindings?.at(-1);
   }
 
-  top(): Identifier | null {
-    if (!this.stack.length) return null;
-    return this.stack[this.stack.length-1] ?? null;
+  declare(id: Identifier): boolean {
+    let scope = this.byScope.get(id.level);
+
+    if (!scope) {
+      scope = new Map();
+      this.byScope.set(id.level, scope);
+    }
+
+    if (scope.has(id.name)) {
+      return false;
+    }
+
+    scope.set(id.name, id);
+
+    let bindings = this.byName.get(id.name);
+
+    if (!bindings) {
+      bindings = [];
+      this.byName.set(id.name, bindings);
+    }
+
+    bindings.push(id);
+
+    return true;
   }
 
-  pop(): void {
-    this.stack.pop();
+  leaveScope(level: number): void {
+    const scope = this.byScope.get(level);
+    if (!scope) return;
+
+    for (const id of scope.values()) {
+      const bindings = this.byName.get(id.name);
+
+      if (!bindings || bindings.at(-1) !== id) {
+        throw new Error(`Identifier index inconsistency: ${id.name}`);
+      }
+
+      bindings.pop();
+
+      if (bindings.length === 0) {
+        this.byName.delete(id.name);
+      }
+    }
+
+    this.byScope.delete(level);
   }
 
-
+  clear(): void {
+    this.byScope.clear();
+    this.byName.clear();
+  }
 }
 
-export { IdentifierStack, Identifier };
+export { IdentifierTable, Identifier };
