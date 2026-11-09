@@ -25,7 +25,7 @@ enum Errors {
   InvalidComparation,
   InappropriateBreakStatement,
   UnknownLoopSyntax,
-  UseDisabledFunction
+  UseDisabledModuleFunction
 }
 
 const errorToString: TranslateMap = {
@@ -50,7 +50,7 @@ const errorToString: TranslateMap = {
   [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
   [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內",
   [`${Errors.UnknownLoopSyntax}`]: "未知的迴圈語法",
-  [`${Errors.UseDisabledFunction}`]: "使用被禁用的函數"
+  [`${Errors.UseDisabledModuleFunction}`]: "使用被禁用的模組函數"
 }
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {

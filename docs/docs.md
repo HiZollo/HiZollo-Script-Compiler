@@ -88,7 +88,7 @@ const ew = new ExecutionWorker(code: string)
 - `InvalidComparation`：關係運算子錯誤
 - `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
 - `UnknownLoopSyntax`：未知的迴圈語法
-- `UseDisabledFunction`：使用被禁用的函數
+- `UseDisabledModuleFunction`：使用被禁用的模組函數
 
 ## Tokens
 一個表示所有 Token 種類的列舉，請參考[原始碼](../src/constant/token.ts)。

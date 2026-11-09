@@ -1,6 +1,6 @@
 globalThis.__hzs__ = {
   __module__: Object.assign(Object.create(null), __HZS_MODULE_LIST__),
-  __disabledFunctions__: Object.assign(Object.create(null), __HZS_DISABLED_FUNCTIONS_LIST__),
+  __disabledModuleFunctions__: Object.assign(Object.create(null), __HZS_DISABLED_MODULE_FUNCTIONS_LIST__),
   __data__: Object.create(null),
   __fn__: Object.create(null),
   __callable__: Object.create(null),
@@ -49,7 +49,7 @@ function __hzs_export(ns, obj_of_func) {
 }
 
 function __hzs_invoke(name, ...args) {
-  if (globalThis.__hzs__.__disabledFunctions__[name]) {
+  if (globalThis.__hzs__.__disabledModuleFunctions__[name]) {
     throw new HZSRuntimeError("MODULE_FUNCTION_DISABLED", { name });
   }
   const func = globalThis.__hzs__.__callable__[name];

@@ -15,7 +15,7 @@ enum Tokens {
   MAX_TERMINAL_TOKEN,
 
   Include, Statement, Declaration, Assignment,
-  If, Else, Loop, Print, Function, Expression, Condition,
+  If, Else, Loop, Print, ModuleFunction, Expression, Condition,
   Term, Factor, LoopHead, IfHead,
   MAX_TOKEN
 }
@@ -43,7 +43,7 @@ const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.Term}`]: termFollow,
   [`${Tokens.Factor}`]: factorFollow,
 
-  [`${Tokens.Function}`]: factorFollow
+  [`${Tokens.ModuleFunction}`]: factorFollow
 };
 
 class Token {

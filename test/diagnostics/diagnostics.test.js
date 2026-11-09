@@ -116,10 +116,10 @@ foo(1
   source: '[1] ()',
   error: Errors.UnknownLoopSyntax
 }, {
-  name: 'UseDisabledFunction',
+  name: 'UseDisabledModuleFunction',
   source: 'eval()',
   compiler: createCompiler({ disabledFunctions: ['eval'] }),
-  error: Errors.UseDisabledFunction
+  error: Errors.UseDisabledModuleFunction
 }];
 
 for (const item of cases) {

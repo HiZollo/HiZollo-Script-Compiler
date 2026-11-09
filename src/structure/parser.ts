@@ -15,7 +15,7 @@ class Parser {
   private nowLevel: number = 0;
   private idTable: IdentifierTable = new IdentifierTable();
   private includePath: PathMapWithCore;
-  private disabledFunctions: string[];
+  private disabledModuleFunctions: string[];
   private importedModule: string[] = [];
   private bootstrapCode: string;
 
@@ -28,7 +28,7 @@ class Parser {
 
   constructor(includePath: PathMapWithCore, disabledFunctions: string[], bootstrapCode: string) {
     this.includePath = includePath;
-    this.disabledFunctions = disabledFunctions;
+    this.disabledModuleFunctions = disabledFunctions;
     this.bootstrapCode = bootstrapCode
   }
 
@@ -114,7 +114,7 @@ class Parser {
 
   // 檢查是否有禁用此函式
   private functionDisabled(idToken: Token) {
-    return this.disabledFunctions.includes(idToken.value);
+    return this.disabledModuleFunctions.includes(idToken.value);
   }
 
   // 當離開一程式碼區域時做的清理動作
@@ -183,10 +183,10 @@ class Parser {
 
     // 生成 Runtime Bootstrap
     const moduleList = JSON.stringify(Object.fromEntries(this.importedModule.map(name => [name, true])))
-    const disabledFunctionsList = JSON.stringify(Object.fromEntries(this.disabledFunctions.map(name => [name, true])))
+    const disabledModuleFunctionsList = JSON.stringify(Object.fromEntries(this.disabledModuleFunctions.map(name => [name, true])))
     const bootstrapCode = this.bootstrapCode
       .replace("__HZS_MODULE_LIST__", moduleList)
-      .replace("__HZS_DISABLED_FUNCTIONS_LIST__", disabledFunctionsList)
+      .replace("__HZS_DISABLED_MODULE_FUNCTIONS_LIST__", disabledModuleFunctionsList)
 
     this.result = `${bootstrapCode}${this.moduleCode}${this.transpiledCode}`
   }
@@ -324,7 +324,7 @@ class Parser {
       if (this.nowTokenIs(Tokens.LeftBracket)) {
         this.revert();
         // 檢查函式
-        this.Function();
+        this.ModuleFunction();
         this.buildCode(";");
         return;
       }
@@ -395,11 +395,11 @@ class Parser {
   }
 
   // 函式敘述檢查
-  private Function(): void {
+  private ModuleFunction(): void {
     // 檢查函式是否被禁用
     if (this.functionDisabled(this.nowToken!)) {
-      ThrowError(this, Errors.UseDisabledFunction, this.nowToken);
-      skip(this, Tokens.Function)
+      ThrowError(this, Errors.UseDisabledModuleFunction, this.nowToken);
+      skip(this, Tokens.ModuleFunction)
       return;
     }
 
@@ -411,7 +411,7 @@ class Parser {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.Function)
+      skip(this, Tokens.ModuleFunction)
       return;
     }
 
@@ -431,7 +431,7 @@ class Parser {
       this.movePointerToNext();
     } else {
       ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-      skip(this, Tokens.Function);
+      skip(this, Tokens.ModuleFunction);
     }
   }
 
@@ -773,7 +773,7 @@ class Parser {
       if (this.nowTokenIs(Tokens.LeftBracket)) {
         this.revert();
         // 檢查函數
-        this.Function();
+        this.ModuleFunction();
         return;
       }
 
