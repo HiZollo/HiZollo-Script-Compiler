@@ -49,6 +49,9 @@ function __hzs_export(ns, obj_of_func) {
 }
 
 function __hzs_invoke(name, ...args) {
+  if (globalThis.__hzs__.__disabledFunctions__[name]) {
+    throw new HZSRuntimeError("MODULE_FUNCTION_DISABLED", { name });
+  }
   const func = globalThis.__hzs__.__callable__[name];
   if (!func) {
     throw new HZSRuntimeError("MODULE_FUNCTION_NOT_FOUND", { fn: name });
