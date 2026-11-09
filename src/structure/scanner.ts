@@ -363,6 +363,13 @@ class Scanner {
           this.advance();
           return this.makeToken(Tokens.Dollar, tokenValue);
 
+        // @ 開頭
+        // 可能識別符：「@」At
+        case '@':
+          tokenValue += this.nextWord;
+          this.advance();
+          return this.makeToken(Tokens.At, tokenValue);
+
         // '／;／# 開頭
         // 註解，直接拉到行末並宣成註解 Token，Parser 會將其忽略
         case "'": case ";": case "#":

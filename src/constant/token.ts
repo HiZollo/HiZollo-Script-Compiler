@@ -9,7 +9,7 @@ enum Tokens {
   LeftSquareBracket, RightSquareBracket,
   LeftCurlyBracket, RightCurlyBracket,
   LeftBracket, RightBracket,
-  Question, Arrow, Comma, Bar, Dollar, Import,
+  Question, Arrow, At, Comma, Bar, Dollar, Import,
   Comments,
 
   MAX_TERMINAL_TOKEN,
