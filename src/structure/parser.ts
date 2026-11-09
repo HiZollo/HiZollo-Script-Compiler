@@ -142,7 +142,7 @@ class Parser {
   // 開始轉換
   public parse(): void {
     // 如果是空檔案就直接結束
-    if (!this.source.filter(v => v.replace(/ +/, '')).length) return;
+    if (!this.source.filter(v => v.trim().length > 0).length) return;
 
     // 載入所有 Token
     this.loadAllToken();
