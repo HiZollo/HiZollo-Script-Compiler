@@ -1,6 +1,6 @@
 globalThis.__hzs__ = {
-  __module__: __HZS_MODULE_LIST__,
-  __disabledFunctions__: __HZS_DISABLED_FUNCTIONS_LIST__,
+  __module__: Object.assign(Object.create(null), __HZS_MODULE_LIST__),
+  __disabledFunctions__: Object.assign(Object.create(null), __HZS_DISABLED_FUNCTIONS_LIST__),
   __data__: Object.create(null),
   __fn__: Object.create(null),
   __callable__: Object.create(null),
