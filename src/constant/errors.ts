@@ -25,10 +25,17 @@ enum Errors {
   InvalidComparation,
   InappropriateBreakStatement,
   UnknownLoopSyntax,
-  UseDisabledModuleFunction
+  UseDisabledModuleFunction,
+  FunctionNotDefined,
+  OverloadNotFound,
+  RedeclareFunction,
+  RedeclareParameter,
+  ReturnOutsideFunction,
+  InvalidReferenceArgument,
+  InvalidFunctionParameter
 }
 
-const errorToString: TranslateMap = {
+const errorToString: Record<Errors, string> = {
   [`${Errors.UnknownStatement}`]: "未知敘述",
   [`${Errors.UnknownIdentifier}`]: "未知用途識別字",
   [`${Errors.CantImportCoreModule}`]: "不能手動引入核心模組",
@@ -50,7 +57,14 @@ const errorToString: TranslateMap = {
   [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
   [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內",
   [`${Errors.UnknownLoopSyntax}`]: "未知的迴圈語法",
-  [`${Errors.UseDisabledModuleFunction}`]: "使用被禁用的模組函數"
+  [`${Errors.UseDisabledModuleFunction}`]: "使用被禁用的模組函數",
+  [`${Errors.FunctionNotDefined}`]: "函式未宣告",
+  [`${Errors.OverloadNotFound}`]: "找不到符合參數數量的函式重載",
+  [`${Errors.RedeclareFunction}`]: "函式重複宣告",
+  [`${Errors.RedeclareParameter}`]: "函數參數重複宣告",
+  [`${Errors.ReturnOutsideFunction}`]: "返回敘述只能出現在函式內",
+  [`${Errors.InvalidReferenceArgument}`]: "參考參數必須傳入已宣告的識別字",
+  [`${Errors.InvalidFunctionParameter}`]: "函式參數宣告錯誤"
 }
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {

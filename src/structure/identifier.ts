@@ -1,12 +1,18 @@
 import type { Token } from '../constant/token';
 
 class Identifier {
-  public name: string = '';
-  public level: number = 0;
+  public readonly token: Token;
+  public readonly name: string;
+  public readonly level: number;
+  public readonly generatedName: string;
+  public readonly byReference: boolean;
 
-  constructor(token: Token, level: number) {
+  constructor(token: Token, level: number, byReference = false) {
+    this.token = token;
     this.name = token.value;
     this.level = level;
+    this.generatedName = `__hzs_C${level}_${this.name}`
+    this.byReference = byReference
   }
 }
 

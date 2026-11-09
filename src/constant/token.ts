@@ -9,7 +9,7 @@ enum Tokens {
   LeftSquareBracket, RightSquareBracket,
   LeftCurlyBracket, RightCurlyBracket,
   LeftBracket, RightBracket,
-  Question, Arrow, At, Comma, Bar, Dollar, Import,
+  Question, Arrow, At, Comma, Bar, Dollar, Import, ReturnArrow,
   Comments,
 
   MAX_TERMINAL_TOKEN,
@@ -17,10 +17,11 @@ enum Tokens {
   Include, Statement, Declaration, Assignment,
   If, Else, Loop, Print, ModuleFunction, Expression, Condition,
   Term, Factor, LoopHead, IfHead,
+  FunctionDeclarationParameter, FunctionDeclaration, FunctionCall, ReturnStatement,
   MAX_TOKEN
 }
 
-const statementFollow = [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.RightBracket]
+const statementFollow = [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.RightBracket, Tokens.Dollar]
 const expressionFollow = [...statementFollow, Tokens.RightSquareBracket, Tokens.RightCurlyBracket, Tokens.Comma, Tokens.LessThan, Tokens.LessOrEqual, Tokens.Equal, Tokens.Inequal, Tokens.GreaterThan, Tokens.GreaterOrEqual];
 const termFollow = [ Tokens.Plus, Tokens.Minus, ...expressionFollow ];
 const factorFollow = [ Tokens.Multiply, Tokens.Divide, ...termFollow ];
@@ -42,6 +43,11 @@ const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.Condition}`]: [Tokens.RightCurlyBracket],
   [`${Tokens.Term}`]: termFollow,
   [`${Tokens.Factor}`]: factorFollow,
+
+  [`${Tokens.FunctionDeclaration}`]: statementFollow,
+  [`${Tokens.FunctionDeclarationParameter}`]: [Tokens.RightBracket, Tokens.LeftBracket],
+  [`${Tokens.FunctionCall}`]: factorFollow,
+  [`${Tokens.ReturnStatement}`]: statementFollow,
 
   [`${Tokens.ModuleFunction}`]: factorFollow
 };

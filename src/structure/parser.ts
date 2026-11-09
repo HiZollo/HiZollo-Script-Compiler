@@ -4,6 +4,7 @@ import { Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
 import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
+import { FunctionDeclaration, FunctionTable, type FunctionParameter } from './function';
 
 class Parser {
   private getToken: () => Token | null = () => null;
@@ -12,8 +13,10 @@ class Parser {
   private pointer: number = -1;
   private endImport: boolean = false;
   private insideLoop: boolean = false;
+  private insideFunction: boolean = false;
   private nowLevel: number = 0;
   private idTable: IdentifierTable = new IdentifierTable();
+  private functionTable: FunctionTable = new FunctionTable();
   private includePath: PathMapWithCore;
   private disabledModuleFunctions: string[];
   private importedModule: string[] = [];
@@ -43,6 +46,7 @@ class Parser {
     this.pointer = -1;
     this.endImport = false;
     this.insideLoop = false;
+    this.insideFunction = false;
     this.importedModule = [];
 
     this.nowToken = null;
@@ -53,6 +57,7 @@ class Parser {
     this.transpiledCode = '';
 
     this.idTable.clear();
+    this.functionTable.clear();
     this.nowLevel = 0;
   }
 
@@ -121,6 +126,7 @@ class Parser {
   private leaveBlock(): void {
     // 將識別字堆疊中此區域宣告的的識別字全部移除
     this.idTable.leaveScope(this.nowLevel);
+    this.functionTable.leaveScope(this.nowLevel);
 
     // 往外一層
     this.nowLevel--;
@@ -376,6 +382,39 @@ class Parser {
       this.Print();
       this.buildCode(";");
       return;
+    }
+
+    // $ 表示宣告自訂函數、返回敘述或呼叫自訂函式
+    if (this.nowTokenIs(Tokens.Dollar)) {
+      this.movePointerToNext();
+
+      if (this.nowTokenIs(Tokens.ReturnArrow)) {
+        this.ReturnStatement();
+        return;
+      }
+
+      if (!this.nowTokenIs(Tokens.Identifier)) {
+        ThrowError(this, Errors.MissingIdentifier, this.nowToken);
+        skip(this, Tokens.Statement);
+        return;
+      }
+
+      this.movePointerToNext();
+
+      // 宣告函式
+      if (this.nowTokenIs(Tokens.Declare)) {
+        this.revert();
+        this.FunctionDeclaration();
+        return;
+      }
+
+      // 呼叫函式
+      if (this.nowTokenIs(Tokens.LeftBracket)) {
+        this.revert();
+        // this.FunctionCall();
+        this.buildCode(';');
+        return;
+      }
     }
 
     ThrowError(this, Errors.UnknownStatement, this.nowToken);
@@ -669,7 +708,7 @@ class Parser {
       return;
     }
 
-    this.buildCode(")");
+    this.buildCode(`)`);
   }
 
   // For 開頭的檢查
@@ -725,7 +764,7 @@ class Parser {
     else
       this.Expression();
 
-    this.buildCode(")");
+    this.buildCode(`)`);
   }
 
   // 檢查是否為表達式
@@ -863,6 +902,149 @@ class Parser {
     // 否則丟出遺漏字串錯誤
     ThrowError(this, Errors.MissingString, this.nowToken);
     skip(this, Tokens.Statement);
+  }
+
+  // 宣告函式
+  private FunctionDeclaration(): void {
+    const functionToken = this.nowToken!;
+    this.movePointerToNext();
+    // 這裡已經確定是 := 了，所以繼續往下走
+    this.movePointerToNext();
+
+    if (!this.nowTokenIs(Tokens.LeftBracket)) {
+      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+      skip(this, Tokens.FunctionDeclaration);
+      return;
+    }
+
+    this.movePointerToNext();
+
+    const declarationLevel = this.nowLevel;
+    const parameterLevel = declarationLevel + 1;
+    const parameters: Identifier[] = [];
+    const parameterNames = new Set<string>();
+
+    // 先讀取參數並存起來不宣告，因為要知道函式的 arity 後才能註冊
+    while (this.nowToken && !this.nowTokenIs(Tokens.RightBracket)) {
+      // 是否為傳參考語法
+      const byReference = this.nowTokenIs(Tokens.Multiply);
+      if (byReference) {
+        this.movePointerToNext();
+      }
+
+      // 函式參數只能是識別字
+      if (!this.nowTokenIs(Tokens.Identifier)) {
+        ThrowError(this, Errors.InvalidFunctionParameter, this.nowToken);
+        skip(this, Tokens.FunctionDeclarationParameter);
+        break;
+      }
+
+      const parameterToken = this.nowToken!;
+
+      // 如果已經出現在參數列表
+      if (parameterNames.has(parameterToken.value)) {
+        ThrowError(this, Errors.RedeclareParameter, parameterToken);
+        skip(this, Tokens.FunctionDeclarationParameter);
+        break;
+      }
+
+      // 加入參數列表並製作識別字物件
+      parameterNames.add(parameterToken.value);
+      const parameter = new Identifier(parameterToken, parameterLevel, byReference);
+      parameters.push(parameter);
+      this.movePointerToNext()
+
+      // 如果是逗號就繼續往下
+      if (this.nowTokenIs(Tokens.Comma)) {
+        this.movePointerToNext();
+        continue;
+      }
+
+      break;
+    }
+
+    // 參數列以右括號結尾
+    if (!this.nowTokenIs(Tokens.RightBracket)) {
+      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
+      skip(this, Tokens.FunctionDeclarationParameter);
+    }
+
+    this.movePointerToNext()
+
+    // 宣告函式
+    const declaration = new FunctionDeclaration(functionToken, declarationLevel, parameters);
+    if (!this.functionTable.declare(declaration)) {
+      ThrowError(this, Errors.RedeclareFunction, functionToken);
+      skip(this, Tokens.FunctionDeclaration);
+      return;
+    }
+
+    // 進入區塊
+    this.nowLevel = parameterLevel; // parameterLevel = nowLevel + 1
+    const previousFunctionState = this.insideFunction;
+    const previousLoopState = this.insideLoop;
+
+    try {
+      this.insideFunction = true;
+      this.insideLoop = false;
+
+      // 登記識別字
+      for (const parameter of parameters) {
+        // 理論上這段不會出現，因為前面已經檢查過參數沒有重複
+        // 而這個區塊除了這幾個參數沒有其他識別字
+        // 但仍然例行性的檢查
+        if (!this.idTable.declare(parameter)) {
+          ThrowError(this, Errors.RedeclareIdentifier, parameter.token);
+        }
+      }
+
+      this.buildCode(`const ${declaration.generatedName}=function(${parameters.map(parameter => parameter.generatedName).join(',')}){`)
+
+      // 左括號表示進入函式區域
+      if (!this.nowTokenIs(Tokens.LeftBracket)) {
+        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+        return;
+      }
+      this.movePointerToNext()
+
+      // 解析敘述
+      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar)) {
+        this.Statement();
+      }
+
+      // 結束函式區域
+      if (!this.nowTokenIs(Tokens.RightBracket)) {
+        ThrowError(this, Errors.MissingRightBracket, this.nowToken)
+        skip(this, Tokens.FunctionDeclaration)
+        return;
+      }
+
+      this.movePointerToNext();
+      this.buildCode('}');
+
+    } finally {
+      this.insideFunction = previousFunctionState;
+      this.insideLoop = previousLoopState;
+      this.leaveBlock();
+    }
+  }
+
+  private ReturnStatement(): void {
+    if (!this.insideFunction) {
+      ThrowError(this, Errors.ReturnOutsideFunction, this.nowToken);
+      skip(this, Tokens.ReturnStatement);
+      return;
+    }
+    this.movePointerToNext();
+    this.buildCode("return ");
+
+    if (this.nowTokenIs(Tokens.String)) {
+      this.Print()
+    } else {
+      this.Expression();
+    }
+
+    this.buildCode(";")
   }
 
 }

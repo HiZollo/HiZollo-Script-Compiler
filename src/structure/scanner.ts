@@ -168,7 +168,7 @@ class Scanner {
           return this.makeToken(Tokens.ERROR, tokenValue);
 
         // < 開頭
-        // 可能識別符：「<」LessThan、「<=」LessOrEqual、「<<<」Write、「<->」Swap
+        // 可能識別符：「<」LessThan、「<=」LessOrEqual、「<<<」Write、「<->」Swap、「<-」ReturnArrow
         case '<':
           tokenValue += this.nextWord;
           this.advance();
@@ -188,7 +188,7 @@ class Scanner {
               this.advance();
               return this.makeToken(Tokens.Swap, tokenValue);
             }
-            return this.makeToken(Tokens.ERROR, tokenValue);
+            return this.makeToken(Tokens.ReturnArrow, tokenValue);
           }
 
           if (this.nextWord === '<') {
