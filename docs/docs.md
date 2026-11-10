@@ -68,7 +68,6 @@ const ew = new ExecutionWorker(code: string)
 ## Errors
 一個表示錯誤內容的列舉，內容與對應中文敘述如下：
 - `UnknownStatement`：未知敘述
-- `UnknownIdentifier`：未知用途識別字
 - `CantImportCoreModule`：不能手動引入核心模組
 - `AlreadyImported`：已經引入此模組
 - `LateImport`：匯入敘述應該放在程式開頭
@@ -85,10 +84,18 @@ const ew = new ExecutionWorker(code: string)
 - `MissingRightCurlyBracket`：遺漏右大括號
 - `MissingAssignOperator`：遺漏指定運算符
 - `MissingArrow`：遺漏箭頭
-- `InvalidComparation`：關係運算子錯誤
 - `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
 - `UnknownLoopSyntax`：未知的迴圈語法
 - `UseDisabledModuleFunction`：使用被禁用的模組函數
+- `Errors.FunctionNotDefined`：函式未宣告
+- `Errors.OverloadNotFound`：找不到符合參數數量的函式重載
+- `Errors.RedeclareFunction`：函式重複宣告
+- `Errors.RedeclareParameter`：函數參數重複宣告
+- `Errors.ReturnOutsideFunction`：返回敘述只能出現在函式內
+- `Errors.InvalidReferenceArgument`：參考參數必須傳入已宣告的識別字
+- `Errors.InvalidFunctionParameter`：函式參數宣告錯誤
+- `Errors.InvalidAssignmentTarget`：無效的指定目標
+- `Errors.MissingExpression`：遺漏運算式
 
 ## Tokens
 一個表示所有 Token 種類的列舉，請參考[原始碼](../src/constant/token.ts)。
