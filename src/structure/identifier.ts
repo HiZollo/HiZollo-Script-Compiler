@@ -4,15 +4,17 @@ class Identifier {
   public readonly token: Token;
   public readonly name: string;
   public readonly level: number;
-  public readonly generatedName: string;
   public readonly byReference: boolean;
+  public readonly generatedName: string;
+  public readonly accessName: string;
 
   constructor(token: Token, level: number, byReference = false) {
     this.token = token;
     this.name = token.value;
     this.level = level;
-    this.generatedName = `__hzs_C${level}_${this.name}`
-    this.byReference = byReference
+    this.byReference = byReference;
+    this.generatedName = `__hzs_C${level}_${this.name}`;
+    this.accessName = this.byReference ? `${this.generatedName}._ref` : this.generatedName;
   }
 }
 

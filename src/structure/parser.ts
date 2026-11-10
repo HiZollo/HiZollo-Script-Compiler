@@ -21,6 +21,7 @@ class Parser {
   private disabledModuleFunctions: string[];
   private importedModule: string[] = [];
   private bootstrapCode: string;
+  private tempCounter: bigint = 0n;
 
   public nowToken: Token | null = null;
   public errorCount: number = 0;
@@ -48,6 +49,7 @@ class Parser {
     this.insideLoop = false;
     this.insideFunction = false;
     this.importedModule = [];
+    this.tempCounter = 0n;
 
     this.nowToken = null;
     this.errorMessages = { textify: '', errors: [] };
@@ -101,20 +103,25 @@ class Parser {
   }
 
   // 宣告變數
-  private declareVariable(idToken: Token) {
+  private declareVariable(identifier: Identifier) {
     // 嘗試宣告變數，如果此區域有相同變數名稱會失敗
-    const success = this.idTable.declare(new Identifier(idToken, this.nowLevel));
+    const success = this.idTable.declare(identifier);
     // 宣告成功就結束
     if (success) return;
 
     // 如果有，擲出變數重複宣告錯誤
-    ThrowError(this, Errors.RedeclareIdentifier, idToken);
+    ThrowError(this, Errors.RedeclareIdentifier, identifier.token);
     skip(this, Tokens.Assignment);
   }
 
   // 檢查指定變數的層級
-  private getResolvedLevel(name: string): number | null {
-    return this.idTable.getVisibleId(name)?.level ?? null;
+  private getResolvedIdentifier(name: string): Identifier | undefined {
+    return this.idTable.getVisibleId(name);
+  }
+
+  // 建立暫時變數名稱
+  private createTempName(): string {
+    return `__hzs_T${this.tempCounter++}`;
   }
 
   // 檢查是否有禁用此函式
@@ -271,13 +278,14 @@ class Parser {
       // 宣告敘述
       if (this.nowTokenIs(Tokens.Declare)) {
         // 建碼
-        this.buildCode(`let ${makeId(nowId.value, this.nowLevel)}=`);
+        const identifier = new Identifier(nowId, this.nowLevel);
+        this.buildCode(`let ${identifier.accessName}=`);
         this.movePointerToNext();
         // 檢查宣告敘述
         this.Declaration();
         this.buildCode(";")
         // 宣告變數
-        this.declareVariable(nowId);
+        this.declareVariable(identifier);
         return;
       }
 
@@ -311,12 +319,14 @@ class Parser {
         this.Identifier(true, false); // 檢查但不建碼
 
         // 建碼
-        const level1 = this.getResolvedLevel(nowId.value) || this.nowLevel;
-        const level2 = this.getResolvedLevel(secondToken.value) || this.nowLevel;
+        const identifier1 = this.getResolvedIdentifier(nowId.value);
+        const identifier2 = this.getResolvedIdentifier(secondToken.value);
 
-        const tmp = makeId(`swapOp_tmp_$${nowId.value}$${secondToken.value}`, this.nowLevel);
-        const id1 = makeId(nowId.value, level1);
-        const id2 = makeId(secondToken.value, level2);
+        if (!identifier1 || !identifier2) return;
+
+        const tmp = this.createTempName();
+        const id1 = identifier1.accessName;
+        const id2 = identifier2.accessName;
 
         this.buildCode("{");
         this.buildCode(`const ${tmp}=${id1};`);
@@ -714,15 +724,10 @@ class Parser {
   // For 開頭的檢查
   private ForHead(): void {
     // 作為遍歷迴圈的變數
-    const indexVar = this.nowToken;
-    this.buildCode(`for(let `);
-
-    // 檢查識別字，但不做是否宣告的檢查
-    this.Identifier(false);
-    if (!indexVar) {
-      skip(this, Tokens.LoopHead);
-      return;
-    }
+    const indexIdentifier = new Identifier(this.nowToken!, this.nowLevel)
+    this.buildCode(`for(let ${indexIdentifier.generatedName}`);
+    // 因為這裡不用檢查識別字是否存在，只需要建碼，所以直接吃掉這個 Token
+    this.movePointerToNext()
 
     // 檢查是否為指定運算子
     if (this.nowTokenIs(Tokens.Assign)) {
@@ -735,7 +740,7 @@ class Parser {
     this.buildCode("=");
     // 檢查箭頭左邊是否為合法表達式
     this.Expression();
-    this.buildCode(`;${makeId(indexVar.value, this.nowLevel)}<=`);
+    this.buildCode(`;${indexIdentifier.accessName}<=`);
 
     // 檢查箭頭有沒有好好寫
     if (this.nowTokenIs(Tokens.Arrow)) {
@@ -748,10 +753,10 @@ class Parser {
 
     // 檢查箭頭右邊是否為合法表達式
     this.Expression();
-    this.buildCode(`;++${makeId(indexVar.value, this.nowLevel)})`);
+    this.buildCode(`;++${indexIdentifier.accessName})`);
 
     // 此時才宣告變數，避免有人在箭頭兩邊的敘述就使用遍歷迴圈的變數但檢查不到
-    this.declareVariable(indexVar);
+    this.declareVariable(indexIdentifier);
   }
 
   // 印出敘述
@@ -855,27 +860,29 @@ class Parser {
 
   // 檢查識別字
   private Identifier(checkExist = true, build = true, idToken = this.nowToken): void {
-    // 如果是識別字的話
-    if (idToken?.token === Tokens.Identifier) {
-      let level = this.nowLevel
-      // 要檢查的話，抓取識別字層級
-      if (checkExist) {
-        const foundLevel = this.getResolvedLevel(idToken.value);
-        // 找不到層級，代表沒有宣告
-        if (foundLevel === null) {
-          ThrowError(this, Errors.IdentifierNotDefined, this.nowToken);
-          return;
-        }
-        level = foundLevel;
-      }
-
-      if (build) this.buildCode(makeId(idToken.value, level));
-      this.movePointerToNext();
+    // 如果不是識別字就是有問題
+    if (idToken?.token !== Tokens.Identifier) {
+      ThrowError(this, Errors.MissingIdentifier, this.nowToken);
       return;
     }
 
-    // 丟出遺漏識別字錯誤
-    ThrowError(this, Errors.MissingIdentifier, this.nowToken);
+    // 需要檢查才抓取識別字物件
+    const identifier = checkExist
+      ? this.getResolvedIdentifier(idToken.value)
+      : undefined;
+
+    // 抓取不到代表沒有宣告
+    if (checkExist && !identifier) {
+      ThrowError(this, Errors.IdentifierNotDefined, this.nowToken);
+      return;
+    }
+
+    if (build) {
+      const name = identifier?.accessName ?? new Identifier(idToken, this.nowLevel).accessName
+      this.buildCode(name)
+    }
+
+    this.movePointerToNext()
   }
 
   // 檢查數字
@@ -1047,11 +1054,6 @@ class Parser {
     this.buildCode(";")
   }
 
-}
-
-// 避免撞名而格式化識別字名稱的函式
-function makeId(identifierName: string, level: number): string {
-  return `__hzs_C${level}_${identifierName}`;
 }
 
 export { Parser }
