@@ -6,10 +6,6 @@ const cases = [{
   source: '?',
   error: Errors.UnknownStatement
 }, {
-  name: 'UnknownIdentifier',
-  source: 'foo',
-  error: Errors.UnknownIdentifier
-}, {
   name: 'CantImportCoreModule',
   source: '>>> "core"',
   error: Errors.CantImportCoreModule
@@ -103,10 +99,6 @@ foo(1
   name: 'MissingArrow',
   source: '[i = 1] ()',
   error: Errors.MissingArrow
-}, {
-  name: 'InvalidComparation',
-  source: '{ 1 } ()',
-  error: Errors.InvalidComparation
 }, {
   name: 'InappropriateBreakStatement',
   source: '->',

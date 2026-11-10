@@ -5,7 +5,6 @@ import type { TranslateMap } from '../types/interfaces';
 
 enum Errors {
   UnknownStatement,
-  UnknownIdentifier,
   CantImportCoreModule,
   AlreadyImported,
   LateImport,
@@ -22,7 +21,6 @@ enum Errors {
   MissingRightCurlyBracket,
   MissingAssignOperator,
   MissingArrow,
-  InvalidComparation,
   InappropriateBreakStatement,
   UnknownLoopSyntax,
   UseDisabledModuleFunction,
@@ -32,12 +30,13 @@ enum Errors {
   RedeclareParameter,
   ReturnOutsideFunction,
   InvalidReferenceArgument,
-  InvalidFunctionParameter
+  InvalidFunctionParameter,
+  InvalidAssignmentTarget,
+  MissingExpression
 }
 
 const errorToString: Record<Errors, string> = {
   [`${Errors.UnknownStatement}`]: "未知敘述",
-  [`${Errors.UnknownIdentifier}`]: "未知用途識別字",
   [`${Errors.CantImportCoreModule}`]: "不能手動引入核心模組",
   [`${Errors.AlreadyImported}`]: "已經引入此模組",
   [`${Errors.LateImport}`]: "匯入敘述應該放在程式開頭",
@@ -54,7 +53,6 @@ const errorToString: Record<Errors, string> = {
   [`${Errors.MissingRightCurlyBracket}`]: "遺漏右大括號",
   [`${Errors.MissingAssignOperator}`]: "遺漏指定運算符",
   [`${Errors.MissingArrow}`]: "遺漏箭頭",
-  [`${Errors.InvalidComparation}`]: "關係運算子錯誤",
   [`${Errors.InappropriateBreakStatement}`]: "跳出敘述只能出現在迴圈內",
   [`${Errors.UnknownLoopSyntax}`]: "未知的迴圈語法",
   [`${Errors.UseDisabledModuleFunction}`]: "使用被禁用的模組函數",
@@ -64,7 +62,9 @@ const errorToString: Record<Errors, string> = {
   [`${Errors.RedeclareParameter}`]: "函數參數重複宣告",
   [`${Errors.ReturnOutsideFunction}`]: "返回敘述只能出現在函式內",
   [`${Errors.InvalidReferenceArgument}`]: "參考參數必須傳入已宣告的識別字",
-  [`${Errors.InvalidFunctionParameter}`]: "函式參數宣告錯誤"
+  [`${Errors.InvalidFunctionParameter}`]: "函式參數宣告錯誤",
+  [`${Errors.InvalidAssignmentTarget}`]: "無效的指定目標",
+  [`${Errors.MissingExpression}`]: "遺漏運算式"
 }
 
 function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {

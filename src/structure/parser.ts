@@ -5,6 +5,7 @@ import { Errors, ThrowError, skip } from '../constant/errors';
 import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
 import { FunctionDeclaration, FunctionTable } from './function';
+import { ExpressionParser } from './expression-parser';
 
 class Parser {
   private getToken: () => Token | null = () => null;
@@ -17,6 +18,7 @@ class Parser {
   private nowLevel: number = 0;
   private idTable: IdentifierTable = new IdentifierTable();
   private functionTable: FunctionTable = new FunctionTable();
+  private expressionParser: ExpressionParser;
   private includePath: PathMapWithCore;
   private disabledModuleFunctions: string[];
   private importedModule: string[] = [];
@@ -34,6 +36,15 @@ class Parser {
     this.includePath = includePath;
     this.disabledModuleFunctions = disabledFunctions;
     this.bootstrapCode = bootstrapCode
+    this.expressionParser = new ExpressionParser({
+      current: () => this.nowToken,
+      peek: () => this.tokens[this.pointer + 1] ?? null,
+      advance: () => this.movePointerToNext(),
+      report: (error, token) => { ThrowError(this, error, token); },
+      recover: (nonterminal) => { skip(this, nonterminal); },
+      getIdentifier: (name) => this.getResolvedIdentifier(name),
+      isModuleFunctionDisabled: (name) => this.functionDisabled(name)
+    });
   }
 
   // 初始化 Parser
@@ -129,6 +140,7 @@ class Parser {
     return this.disabledModuleFunctions.includes(idToken.value);
   }
 
+  // 檢查是否為 Statement 的開頭
   private isStartOfStatement(token: Token | null = this.nowToken): boolean {
     if (!token) return false
     return [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar].includes(token.token)
@@ -294,18 +306,6 @@ class Parser {
         return;
       }
 
-      // 指定敘述
-      if (this.nowTokenIs(Tokens.Assign)) {
-        // 往前移一格以對識別字做檢查
-        this.revert();
-        this.Identifier();
-        this.movePointerToNext();
-        // 檢查指定敘述
-        this.Assignment();
-        this.buildCode(";");
-        return;
-      }
-
       // 交換敘述
       if (this.nowTokenIs(Tokens.Swap)) {
         // 往前移一格已對識別字做檢查
@@ -341,19 +341,10 @@ class Parser {
         return;
       }
 
-      // 函式敘述
-      if (this.nowTokenIs(Tokens.LeftBracket)) {
-        this.revert();
-        // 檢查函式
-        this.ModuleFunction();
-        this.buildCode(";");
-        return;
-      }
-
-      // 若非以上三種，即為錯誤敘述，往前回到識別字 Token 後丟出錯誤
+      // 若非以上，視為表達式，往前回到識別字 Token 後開始解析
       this.revert();
-      ThrowError(this, Errors.UnknownIdentifier, this.nowToken);
-      skip(this, Tokens.Statement);
+      this.Expression();
+      this.buildCode(";");
       return;
     }
 
@@ -441,81 +432,6 @@ class Parser {
     this.Expression();
   }
 
-  // 指定敘述檢查
-  private Assignment(): void {
-    this.buildCode("=");
-    // 檢查右邊是否為合法表達式
-    this.Expression();
-  }
-
-  // 函式敘述檢查
-  private ModuleFunction(): void {
-    // 檢查函式是否被禁用
-    if (this.functionDisabled(this.nowToken!)) {
-      ThrowError(this, Errors.UseDisabledModuleFunction, this.nowToken);
-      skip(this, Tokens.ModuleFunction)
-      return;
-    }
-
-    this.buildCode(`__hzs_invoke("${this.nowToken!.value}"`)
-    this.movePointerToNext();
-
-    // 檢查是否跟隨左括號
-    if (this.nowTokenIs(Tokens.LeftBracket)) {
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.ModuleFunction)
-      return;
-    }
-
-    // 碰到右括號表示函式無參數，建碼後結束
-    if (this.nowTokenIs(Tokens.RightBracket)) {
-      this.buildCode(")");
-      this.movePointerToNext();
-      return;
-    }
-
-    // 檢查參數列
-    this.ParameterList();
-
-    // 如果這時還不是右括號，表示原程式碼缺少了括號
-    if (this.nowTokenIs(Tokens.RightBracket)) {
-      this.buildCode(")");
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-      skip(this, Tokens.ModuleFunction);
-    }
-  }
-
-  // 檢查參數列
-  private ParameterList(): void {
-    // 檢查參數
-    this.Parameter();
-
-    // 如果下一格是逗號，表示還有下一個參數，一直檢查到沒有為止
-    while (this.nowTokenIs(Tokens.Comma)) {
-      this.movePointerToNext();
-      this.Parameter();
-    }
-  }
-
-  // 檢查參數
-  private Parameter(): void {
-    this.buildCode(',');
-
-    // 如果是字串就檢查字串
-    if (this.nowTokenIs(Tokens.String)) {
-      this.String();
-      return;
-    }
-
-    // 否則檢查是否為合法表達式
-    this.Expression();
-    return;
-  }
-
   // 檢查 If 敘述
   private If(): void {
     // 檢查是否為合法 If 開頭
@@ -573,7 +489,7 @@ class Parser {
   private IfHead(): void {
     this.buildCode("if(");
     // 檢查條件句是否正確
-    this.Condition();
+    this.Expression();
 
     // 必須以右大括號結尾
     if (this.nowTokenIs(Tokens.RightCurlyBracket)) {
@@ -583,25 +499,6 @@ class Parser {
       ThrowError(this, Errors.MissingRightCurlyBracket, this.nowToken);
       skip(this, Tokens.IfHead);
     }
-  }
-
-  // 檢查條件句
-  private Condition(): void {
-    // 檢查關係運算子左邊是否為合法表達式
-    this.Expression();
-
-    // 必須接續關係運算子，否則錯誤
-    if (this.nowTokenIs(Tokens.LessThan, Tokens.GreaterThan, Tokens.LessOrEqual, Tokens.GreaterOrEqual, Tokens.Equal, Tokens.Inequal)) {
-      this.buildCode(this.nowToken!.value);
-      this.movePointerToNext();
-    } else {
-      ThrowError(this, Errors.InvalidComparation, this.nowToken);
-      skip(this, Tokens.Condition);
-      return;
-    }
-
-    // 檢查關係運算子右邊是否為合法表達式
-    this.Expression();
   }
 
   // 檢查 Else
@@ -712,7 +609,7 @@ class Parser {
     this.movePointerToNext();
     this.buildCode("while(");
 
-    this.Condition();
+    this.Expression();
 
     // 必須以 } 結束條件
     if (this.nowTokenIs(Tokens.RightCurlyBracket)) {
@@ -779,88 +676,7 @@ class Parser {
 
   // 檢查是否為表達式
   private Expression(): void {
-    // 檢查項目是否正確
-    // 項目是由乘除號連接的一個以上的因子
-    // 因子則是計算的最小單位
-    this.Term();
-
-    // 如果是加減號，檢查另外一邊是否也是項目
-    while (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
-      this.buildCode(this.nowToken!.value + " ");
-      this.movePointerToNext();
-      this.Term();
-    }
-  }
-
-  // 檢查項目
-  private Term(): void {
-    // 檢查是否為計算因子
-    this.Factor();
-    // 如果是乘除號，檢查另外一邊是否也是計算因子
-    while (this.nowTokenIs(Tokens.Multiply, Tokens.Divide)) {
-      this.buildCode(this.nowToken!.value);
-      this.movePointerToNext();
-      this.Factor()
-    }
-  }
-
-  // 計算因子
-  private Factor(): void {
-    // 檢查開頭的正負號
-    if (this.nowTokenIs(Tokens.Plus, Tokens.Minus)) {
-      this.buildCode(this.nowToken!.value + " ");
-      this.movePointerToNext();
-      // 正負號後必須跟隨計算因子
-      this.Factor();
-      return;
-    }
-    
-    // 識別字開頭，可能是函數或變數
-    if (this.nowTokenIs(Tokens.Identifier)) {
-      this.movePointerToNext();
-      // 函數
-      if (this.nowTokenIs(Tokens.LeftBracket)) {
-        this.revert();
-        // 檢查函數
-        this.ModuleFunction();
-        return;
-      }
-
-      // 否則回頭檢查識別字
-      this.revert();
-      this.Identifier();
-      return;
-    }
-
-    // 數字
-    if (this.nowTokenIs(Tokens.Number)) {
-      this.Number();
-      return;
-    }
-
-    // 如果碰到左括號
-    if (this.nowTokenIs(Tokens.LeftBracket)) {
-      this.buildCode('(');
-      this.movePointerToNext();
-      // 檢查是否為合法表達式
-      this.Expression();
-      // 左右括號必須成對
-      if (this.nowTokenIs(Tokens.RightBracket)) {
-        this.buildCode(')');
-        this.movePointerToNext();
-        return;
-      }
-      this.revert();
-      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-      skip(this, Tokens.Factor);
-      return;
-    }
-
-    this.revert();
-    // 上面全部都不是的話，丟出缺少左括號錯誤
-    ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-    skip(this, Tokens.Factor);
-
+    this.buildCode(this.expressionParser.parse());
   }
 
   // 檢查識別字
@@ -888,19 +704,6 @@ class Parser {
     }
 
     this.movePointerToNext()
-  }
-
-  // 檢查數字
-  private Number(): void {
-    // 是數字就建碼
-    if (this.nowTokenIs(Tokens.Number)) {
-      const safeNumberStr = Number(this.nowToken!.value).toString();
-      this.buildCode(safeNumberStr);
-      this.movePointerToNext();
-      return;
-    }
-    // 丟出遺漏數字錯誤
-    ThrowError(this, Errors.MissingNumber, this.nowToken);
   }
 
   // 檢查字串

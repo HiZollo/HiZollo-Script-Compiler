@@ -293,6 +293,20 @@ class Scanner {
           this.advance();
           return this.makeToken(Tokens.Divide, tokenValue);
 
+        // % 開頭
+        // 可能識別符：「%」Modulo
+          case '%':
+            tokenValue += this.nextWord;
+            this.advance();
+            return this.makeToken(Tokens.Modulo, tokenValue);
+
+        // ^ 開頭
+        // 可能識別符：「^」Power
+        case '^':
+          tokenValue += this.nextWord;
+          this.advance();
+          return this.makeToken(Tokens.Power, tokenValue);
+
         // { 開頭
         // 可能識別符：「{」LeftCurlyBracket
         case '{':
@@ -349,11 +363,28 @@ class Scanner {
           this.advance();
           return this.makeToken(Tokens.Comma, tokenValue);
 
+        case '&':
+          tokenValue += this.nextWord;
+          this.advance();
+          // @ts-ignore
+          if (this.nextWord === '&') {
+            tokenValue += this.nextWord;
+            this.advance();
+            return this.makeToken(Tokens.LogicalAnd, tokenValue);
+          }
+          return this.makeToken(Tokens.ERROR, tokenValue);
+
         // | 開頭
         // 可能識別符：「|」Bar
         case '|':
           tokenValue += this.nextWord;
           this.advance();
+          // @ts-ignore
+          if (this.nextWord === '|') {
+            tokenValue += this.nextWord;
+            this.advance();
+            return this.makeToken(Tokens.LogicalOr, tokenValue);
+          }
           return this.makeToken(Tokens.Bar, tokenValue);
 
         // $ 開頭
