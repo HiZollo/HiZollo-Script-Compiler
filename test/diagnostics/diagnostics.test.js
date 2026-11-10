@@ -112,6 +112,48 @@ foo(1
   source: 'eval()',
   compiler: createCompiler({ disabledFunctions: ['eval'] }),
   error: Errors.UseDisabledModuleFunction
+}, {
+  name: 'FunctionNotDefined',
+  source: '$missing()',
+  error: Errors.FunctionNotDefined
+}, {
+  name: 'OverloadNotFound',
+  source: `
+$test := () ()
+$test(1)
+`,
+  error: Errors.OverloadNotFound
+}, {
+  name: 'RedeclareFunction',
+  source: '$test := () () $test := () ()',
+  error: Errors.RedeclareFunction
+}, {
+  name: 'RedeclareParameter',
+  source: '$test := (a, a) ()',
+  error: Errors.RedeclareParameter
+}, {
+  name: 'ReturnOutsideFunction',
+  source: '$ <- 1',
+  error: Errors.ReturnOutsideFunction
+}, {
+  name: 'InvalidReferenceArgument',
+  source: `
+$test := (*a) ()
+$test(1)
+`,
+  error: Errors.InvalidReferenceArgument
+}, {
+  name: 'InvalidFunctionParameter',
+  source: '$test := (1) ()',
+  error: Errors.InvalidFunctionParameter
+}, {
+  name: 'InvalidAssignmentTarget',
+  source: '1=1',
+  error: Errors.InvalidAssignmentTarget
+}, {
+  name: 'MissingExpression',
+  source: '1+',
+  error: Errors.MissingExpression
 }];
 
 for (const item of cases) {

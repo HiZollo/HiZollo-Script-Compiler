@@ -43,7 +43,9 @@ class Parser {
       report: (error, token) => { ThrowError(this, error, token); },
       recover: (nonterminal) => { skip(this, nonterminal); },
       getIdentifier: (name) => this.getResolvedIdentifier(name),
-      isModuleFunctionDisabled: (name) => this.functionDisabled(name)
+      isModuleFunctionDisabled: (name) => this.functionDisabled(name),
+      getFunction: (name, arity) => this.functionTable.getVisible(name, arity, this.nowLevel),
+      hasFunction: (name) => this.functionTable.hasVisibleName(name, this.nowLevel)
     });
   }
 
@@ -287,6 +289,13 @@ class Parser {
       return;
     }
 
+    // 遇到數字
+    if (this.nowTokenIs(Tokens.Number)) {
+      this.Expression()
+      this.buildCode(";")
+      return
+    }
+
     // 遇到識別字
     if (this.nowTokenIs(Tokens.Identifier)) {
       const nowId = this.nowToken;
@@ -414,13 +423,13 @@ class Parser {
         return;
       }
 
-      // 呼叫函式
-      if (this.nowTokenIs(Tokens.LeftBracket)) {
-        this.revert();
-        // this.FunctionCall();
-        this.buildCode(';');
-        return;
-      }
+      // Custom Function Call
+      // 還原至 $ Token，交給 ExpressionParser
+      this.revert();
+      this.revert();
+      this.Expression();
+      this.buildCode(';');
+      return;
     }
 
     ThrowError(this, Errors.UnknownStatement, this.nowToken);

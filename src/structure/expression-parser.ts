@@ -1,13 +1,20 @@
 import { Errors } from '../constant/errors';
 import { Token, Tokens } from '../constant/token';
+import type { FunctionDeclaration } from './function';
 import type { Identifier } from './identifier';
 
+type CustomFunctionArgument = {
+  expression: ExpressionNode;
+  byReference: boolean;
+};
+
 type ExpressionNode =
-  | { type: 'Atom'; code: string; assignable: boolean; }
+  | { type: 'Atom'; code: string; assignable: boolean; token?: Token }
   | { type: 'Unary'; operator: string; operand: ExpressionNode;  }
   | { type: 'Binary'; operator: Tokens; left: ExpressionNode; right: ExpressionNode; }
   | { type: 'Assignment'; left: ExpressionNode; right: ExpressionNode; }
-  | { type: 'ModuleFunction'; name: Token; args: ExpressionNode[]; };
+  | { type: 'ModuleFunction'; name: Token; args: ExpressionNode[]; }
+  | { type: 'CustomFunction'; name: Token; generatedName: string; args: CustomFunctionArgument[] };
 
 export interface ExpressionParserContext {
   current(): Token | null;
@@ -17,6 +24,8 @@ export interface ExpressionParserContext {
   recover(nonterminal: Tokens): void;
   getIdentifier(name: string): Identifier | undefined;
   isModuleFunctionDisabled(name: Token): boolean;
+  getFunction(name: string, arity: number): FunctionDeclaration | undefined;
+  hasFunction(name: string): boolean;
 }
 
 class ExpressionParser {
@@ -111,6 +120,10 @@ class ExpressionParser {
   }
 
   private parsePrimary(): ExpressionNode {
+    if (this.nowTokenIs(Tokens.Dollar)) {
+      return this.parseCustomFunction();
+    }
+
     if (this.nowTokenIs(Tokens.Identifier)) {
       if (this.context.peek()?.token === Tokens.LeftBracket) {
         return this.parseModuleFunction();
@@ -155,6 +168,105 @@ class ExpressionParser {
     }
 
     return expression;
+  }
+
+  private getExpressionToken(expression: ExpressionNode): Token | undefined {
+    switch (expression.type) {
+      case 'Atom':
+        return expression.token;
+
+      case 'Unary':
+        return this.getExpressionToken(expression.operand);
+
+      case 'Binary':
+        return this.getExpressionToken(expression.left);
+
+      case 'Assignment':
+        return this.getExpressionToken(expression.left);
+
+      case 'ModuleFunction':
+        return expression.name;
+
+      case 'CustomFunction':
+        return expression.name;
+    }
+  }
+
+  private parseCustomFunction(): ExpressionNode {
+    this.context.advance();
+
+    // 必須接識別字
+    if (!this.nowTokenIs(Tokens.Identifier)) {
+      this.context.report(Errors.MissingIdentifier, this.context.current());
+      this.context.recover(Tokens.FunctionCall);
+      return { type: 'Atom', code: '0', assignable: false };
+    }
+
+    const name = this.context.current()!;
+    this.context.advance();
+
+    if (!this.nowTokenIs(Tokens.LeftBracket)) {
+      this.context.report(Errors.MissingLeftBracket, this.context.current());
+      this.context.recover(Tokens.FunctionCall);
+      return { type: 'Atom', code: '0', assignable: false };
+    }
+
+    // 吃掉左括號
+    this.context.advance();
+
+    // 解析參數
+    const args: ExpressionNode[] = [];
+
+    if (!this.nowTokenIs(Tokens.RightBracket)) {
+      args.push(this.parseArgument());
+
+      while (this.nowTokenIs(Tokens.Comma)) {
+        this.context.advance();
+
+        args.push(this.parseArgument());
+      }
+    }
+
+    // 檢查右括號
+    if (this.nowTokenIs(Tokens.RightBracket)) {
+      this.context.advance();
+    } else {
+      this.context.report(
+        Errors.MissingRightBracket,
+        this.context.current()
+      );
+
+      this.context.recover(Tokens.FunctionCall);
+    }
+
+    // 根據函式名稱及參數數量查找函式
+    const declaration = this.context.getFunction(name.value, args.length);
+
+    // 找不到符合的函式
+    if (!declaration) {
+      const error = this.context.hasFunction(name.value)
+        ? Errors.OverloadNotFound
+        : Errors.FunctionNotDefined;
+      this.context.report(error, name);
+      return { type: 'Atom', code: '0', assignable: false};
+    }
+
+    // 依照函式宣告中的 byReference 決定參數轉換方式
+    const compiledArgs = args.map((argument, index) => {
+      const byReference = declaration.parameters[index]!.byReference;
+
+      if (byReference && (argument.type !== 'Atom' || !argument.assignable)) {
+        this.context.report(Errors.InvalidReferenceArgument, this.getExpressionToken(argument) ?? name);
+      }
+      return { expression: argument, byReference };
+    });
+
+    return {
+      type: 'CustomFunction',
+      name,
+      generatedName: declaration.generatedName,
+      args: compiledArgs
+    };
   }
 
   private parseModuleFunction(): ExpressionNode {
@@ -202,7 +314,7 @@ class ExpressionParser {
 
     if (token?.token === Tokens.String) {
       this.context.advance();
-      return { type: 'Atom', code: token.value, assignable: false };
+      return { type: 'Atom', code: token.value, assignable: false, token };
     }
 
     return this.parseAssignment();
@@ -220,14 +332,13 @@ class ExpressionParser {
       return { type: 'Atom', code: '0', assignable: false };
     }
 
-    return { type: 'Atom', code: identifier.accessName, assignable: true };
+    return { type: 'Atom', code: identifier.accessName, assignable: true, token };
   }
 
   private parseNumber(): ExpressionNode {
     const token = this.context.current()!;
     this.context.advance();
-
-    return { type: 'Atom', code: Number(token.value).toString(), assignable: false };
+    return { type: 'Atom', code: Number(token.value).toString(), assignable: false, token };
   }
 
   private parseBinary(next: () => ExpressionNode, operators: Tokens[]): ExpressionNode {
@@ -279,6 +390,18 @@ class ExpressionParser {
       case 'ModuleFunction': {
         const args = expression.args.map(arg => this.buildCode(arg)).join(',');
         code = `__hzs_invoke("${expression.name.value}"${args ? `,${args}` : ''})`;
+        break;
+      }
+
+      case 'CustomFunction': {
+        const args = expression.args.map(({ expression: argument, byReference }) => {
+          if (!byReference) return this.buildCode(argument);
+          if (argument.type !== 'Atom' || !argument.assignable) return 'undefined';
+
+          const target = argument.code;
+          return `{get _ref(){return ${target};},set _ref(v){return ${target}=v;}}`;
+        });
+        code = `${expression.generatedName}(${args.join(',')})`;
         break;
       }
     }
@@ -374,6 +497,7 @@ class ExpressionParser {
     switch (expression.type) {
       case 'Atom':
       case 'ModuleFunction':
+      case 'CustomFunction':
         return 100;
 
       case 'Unary':
