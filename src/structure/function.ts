@@ -1,12 +1,6 @@
 import type { Token } from '../constant/token';
 import type { Identifier } from './identifier';
 
-export interface FunctionParameter {
-  name: string;
-  byReference: boolean;
-  token: Token;
-}
-
 export class FunctionDeclaration {
   public readonly name: string;
   public readonly level: number;

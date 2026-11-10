@@ -4,7 +4,7 @@ import { Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
 import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
-import { FunctionDeclaration, FunctionTable, type FunctionParameter } from './function';
+import { FunctionDeclaration, FunctionTable } from './function';
 
 class Parser {
   private getToken: () => Token | null = () => null;
@@ -127,6 +127,11 @@ class Parser {
   // 檢查是否有禁用此函式
   private functionDisabled(idToken: Token) {
     return this.disabledModuleFunctions.includes(idToken.value);
+  }
+
+  private isStartOfStatement(token: Token | null = this.nowToken): boolean {
+    if (!token) return false
+    return [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar].includes(token.token)
   }
 
   // 當離開一程式碼區域時做的清理動作
@@ -279,7 +284,7 @@ class Parser {
       if (this.nowTokenIs(Tokens.Declare)) {
         // 建碼
         const identifier = new Identifier(nowId, this.nowLevel);
-        this.buildCode(`let ${identifier.accessName}=`);
+        this.buildCode(`let ${identifier.generatedName}=`);
         this.movePointerToNext();
         // 檢查宣告敘述
         this.Declaration();
@@ -529,9 +534,9 @@ class Parser {
         skip(this, Tokens.If);
       }
 
-      // 只要是這六種，就表示是一個敘述，進行檢查
+      // 如果是一個敘述就解析
       // 否則就進行 If 結尾的檢查
-      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
+      while (this.isStartOfStatement(this.nowToken)) {
         this.Statement();
       }
 
@@ -614,9 +619,9 @@ class Parser {
         skip(this, Tokens.Else);
       }
 
-      // 只要是這六種，就表示是一個敘述，進行檢查
+      // 如果是一個敘述就解析
       // 否則就進行 Else 結尾的檢查
-      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
+      while (this.isStartOfStatement()) {
         this.Statement();
       }
 
@@ -674,9 +679,9 @@ class Parser {
 
       // 進入迴圈
       this.insideLoop = true;
-      // 只要是這六種，就表示是一個敘述，進行檢查
+      // 如果是一個敘述就解析
       // 否則就進行 For 結尾的檢查
-      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import)) {
+      while (this.isStartOfStatement()) {
         this.Statement();
       }
 
@@ -1015,7 +1020,7 @@ class Parser {
       this.movePointerToNext()
 
       // 解析敘述
-      while (this.nowTokenIs(Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar)) {
+      while (this.isStartOfStatement()) {
         this.Statement();
       }
 
@@ -1027,7 +1032,7 @@ class Parser {
       }
 
       this.movePointerToNext();
-      this.buildCode('}');
+      this.buildCode('};');
 
     } finally {
       this.insideFunction = previousFunctionState;
@@ -1046,7 +1051,7 @@ class Parser {
     this.buildCode("return ");
 
     if (this.nowTokenIs(Tokens.String)) {
-      this.Print()
+      this.String()
     } else {
       this.Expression();
     }
