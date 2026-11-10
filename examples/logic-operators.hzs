@@ -1,0 +1,8 @@
+a := 12345
+b := -35
+
+{ a > b && b > 0 } (
+  <<< "a > b with b positive"
+) / { a > b || b > 0 } (
+  <<< "a > b or b positive"
+)
