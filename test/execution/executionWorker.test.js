@@ -42,7 +42,7 @@ test('executionWorker: worker failures become ExecutionError', async () => {
   );
 });
 
-test('ExecutionWorker rejects when execution exceeds the limit', async () => {
+test('executionWorker rejects when execution exceeds the limit', async () => {
   await assert.rejects(
     () => new ExecutionWorker(`while (true) {}`).execute({ maxExecutionTime: 50 }),
     error => error instanceof ExecutionTimeoutError && error.code === ExecutionErrorCode.EXCEED_RUNTIME_LIMIT && error.maxExecutionTime === 50
