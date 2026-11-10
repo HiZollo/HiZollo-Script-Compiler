@@ -2,6 +2,12 @@ $add := (a, b) (
   $ <- a + b
 )
 
+<<< $add(1, 2)
+
 $add := (a, b, *sum) (
   sum = a + b
 )
+
+x := 0
+$add(1, 2, x)
+<<< x

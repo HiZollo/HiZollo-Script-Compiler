@@ -35,21 +35,19 @@
 ## 流程控制
 ### If
 ```
-{ <Condition> } (
+{ <Expression> } (
   <Statement>
 )
-
-<Condition> ::= <Expression> >|>=|==|<=|<|!= <Expression>
 ```
 [範例](../examples/if.hzs)
 
 在大括號中放入一個比較的算式，接續一個小括號，裡面放上要執行的內容。當條件式執行結果是正確的時候，就會執行小括號裡面的內容，否則會跳過。
 
-條件式是兩個表達式，中間使用關係運算子（`>`、`>=`、`==`、`<=`、`<`、`!=`）連接。
+當表達式算出 0 時候，區塊裡面不會執行，其餘狀況會執行裡面的程式。你可以使用 `==`、`!=`、`>`、`>=`、`<`、`<=` 比較運算，或是 `&&` 和 `||` 邏輯運算來作為條件。
 
 ### If-Else
 ```
-{ <Condition> } (
+{ <Expression> } (
   <Statement>
 ) / (
   <Statement>
@@ -63,9 +61,9 @@
 
 ### If-ElseIf-Else
 ```
-{ <Condition> } (
+{ <Expression> } (
   <Statement>
-) / { <Condition> } (
+) / { <Expression> } (
   <Statement>
 ) / (
   <Statement>
@@ -94,7 +92,7 @@
 
 ### 條件迴圈
 ```
-[{ <Condition> }] (
+[{ <Expression> }] (
   <Statement>
 )
 ```
@@ -130,6 +128,42 @@
 ```
 會輸出 `1 2 3 4 `。因為前者在 `i == 5` 時只跳出該輪，所以不會印出 `5 `，但後者則是直接結束，所以 5 以後的數字都不會被印出。
 
+## 自訂函式
+[範例](../examples/function.hzs)
+
+### 函式宣告
+```
+$<Identifier> := (<ParameterList>) (
+  <Statement>
+)
+
+<ParameterList> ::= <Parameter> {, <Parameter>}
+<Parameter> ::= <Identifier> | *<Identifier>
+```
+使用 `$` 宣告自訂函式。
+
+一般參數直接填入識別字。若要宣告參考參數，則在識別字前面加上 `*`。一般參數會複製一份進去函數，在函數內更改，外面不會被一起更改。參考參數在函數內進行改動會影響到外面傳入的變數。
+
+### 函式呼叫
+```
+$<Identifier>(<ArgumentList>)
+```
+呼叫自訂函式時，在函式名稱前面加上 `$`。
+
+呼叫端不需要另外標記參考參數。編譯器會根據函式宣告，自動決定哪些參數需要以參考方式傳遞。參考參數只能傳入已宣告的識別字，不能傳入常數或運算式。
+
+### 返回敘述
+```
+$ <- <Expression>
+```
+回傳函式結果。只能在函式定義中使用。
+
+
+### 函式重載
+同一個作用域中，允許相同名稱但不同參數數量的函式。
+編譯器會依照函式名稱及參數數量選擇對應的函式。
+
+
 ## 引入模組
 ```
 >>> <String>
@@ -141,16 +175,16 @@
 你不可以引入相同套件兩次，且引入敘述只能放在程式開頭。
 
 
-## 函式呼叫
+## 模組函式呼叫
 ```
 <Identifier>(<ParameterList>)
 
 <ParameterList> ::= <Parameter> {, <Parameter> }
 <Parameter> ::= <Expression> | <String>
 ```
-[範例](../examples/function.hzs)
+[範例](../examples/module-function.hzs)
 
-HiZollo Script 不能讓使用者自訂函式，所有函式都是從外部來的。你可以使用 `函數名稱(參數一, 參數二, ...)` 來呼叫函式。
+HiZollo Script 中，有一類函式是從外部模組來的，可以直接使用使用 `函數名稱(參數一, 參數二, ...)` 來呼叫模組函式。
 
 一個函式如何呼叫取決於該套件的定義，請參見個別套件之定義。
 
