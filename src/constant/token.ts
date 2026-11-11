@@ -16,15 +16,16 @@ enum Tokens {
 
   MAX_TERMINAL_TOKEN,
 
-  Include, Statement, Declaration, Assignment,
-  If, Else, Loop, Print, ModuleFunction, Expression, Condition,
-  Term, Factor, LoopHead, IfHead,
+  Include, Statement, Declaration,
+  If, Else, Loop, Print, ModuleFunction, Expression,
+  LoopHead, IfHead,
   FunctionDeclarationParameter, FunctionDeclaration, FunctionCall, ReturnStatement,
   MAX_TOKEN
 }
 
-const statementFollow = [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.RightBracket, Tokens.Dollar]
-const expressionFollow = [...statementFollow, Tokens.RightSquareBracket, Tokens.RightCurlyBracket, Tokens.Comma, Tokens.LessThan, Tokens.LessOrEqual, Tokens.Equal, Tokens.Inequal, Tokens.GreaterThan, Tokens.GreaterOrEqual];
+const statementBeginning = [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar, Tokens.Number];
+const statementFollow = [...statementBeginning, Tokens.RightBracket];
+const expressionFollow = [...statementFollow, Tokens.RightSquareBracket, Tokens.RightCurlyBracket, Tokens.Comma];
 const termFollow = [ Tokens.Plus, Tokens.Minus, ...expressionFollow ];
 const factorFollow = [ Tokens.Multiply, Tokens.Divide, ...termFollow ];
 
@@ -32,7 +33,6 @@ const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.Include}`]: statementFollow,
   [`${Tokens.Statement}`]: statementFollow,
   [`${Tokens.Declaration}`]: statementFollow,
-  [`${Tokens.Assignment}`]: statementFollow,
   [`${Tokens.If}`]: statementFollow,
   [`${Tokens.Else}`]: statementFollow,
   [`${Tokens.Print}`]: statementFollow,
@@ -42,16 +42,13 @@ const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.LoopHead}`]: [Tokens.RightSquareBracket],
 
   [`${Tokens.Expression}`]: expressionFollow,
-  [`${Tokens.Condition}`]: [Tokens.RightCurlyBracket],
-  [`${Tokens.Term}`]: termFollow,
-  [`${Tokens.Factor}`]: factorFollow,
+  [`${Tokens.ModuleFunction}`]: expressionFollow,
+  [`${Tokens.FunctionCall}`]: expressionFollow,
 
   [`${Tokens.FunctionDeclaration}`]: statementFollow,
   [`${Tokens.FunctionDeclarationParameter}`]: [Tokens.RightBracket, Tokens.LeftBracket],
-  [`${Tokens.FunctionCall}`]: factorFollow,
   [`${Tokens.ReturnStatement}`]: statementFollow,
 
-  [`${Tokens.ModuleFunction}`]: factorFollow
 };
 
 class Token {
@@ -79,4 +76,4 @@ class Token {
   }
 }
 
-export { Tokens, Token, followTokenSet }
+export { Tokens, Token, followTokenSet, statementBeginning }

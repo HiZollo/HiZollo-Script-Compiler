@@ -1,6 +1,6 @@
 import { Scanner } from './scanner';
 import { Identifier, IdentifierTable } from './identifier';
-import { Token, Tokens } from '../constant/token';
+import { statementBeginning, Token, Tokens } from '../constant/token';
 import { Errors, ThrowError, skip } from '../constant/errors';
 import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
@@ -124,7 +124,7 @@ class Parser {
 
     // 如果有，擲出變數重複宣告錯誤
     ThrowError(this, Errors.RedeclareIdentifier, identifier.token);
-    skip(this, Tokens.Assignment);
+    skip(this, Tokens.Declaration);
   }
 
   // 檢查指定變數的層級
@@ -145,7 +145,7 @@ class Parser {
   // 檢查是否為 Statement 的開頭
   private isStartOfStatement(token: Token | null = this.nowToken): boolean {
     if (!token) return false
-    return [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar].includes(token.token)
+    return statementBeginning.includes(token.token)
   }
 
   // 當離開一程式碼區域時做的清理動作

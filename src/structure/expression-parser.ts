@@ -1,5 +1,5 @@
 import { Errors } from '../constant/errors';
-import { Token, Tokens } from '../constant/token';
+import { followTokenSet, Token, Tokens } from '../constant/token';
 import type { FunctionDeclaration } from './function';
 import type { Identifier } from './identifier';
 
@@ -557,20 +557,7 @@ class ExpressionParser {
   }
 
   private isExpressionBoundary(token: Tokens): boolean {
-    return [
-      Tokens.Identifier,
-      Tokens.LeftCurlyBracket,
-      Tokens.LeftSquareBracket,
-      Tokens.RightCurlyBracket,
-      Tokens.LeftBracket,
-      Tokens.RightBracket,
-      Tokens.RightSquareBracket,
-      Tokens.Comma,
-      Tokens.Write,
-      Tokens.Arrow,
-      Tokens.Import,
-      Tokens.Dollar
-    ].includes(token);
+    return followTokenSet[Tokens.Expression]!.includes(token);
   }
 }
 
