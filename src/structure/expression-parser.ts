@@ -1,5 +1,5 @@
 import { Errors } from '../constant/errors';
-import { followTokenSet, Token, Tokens } from '../constant/token';
+import { booleanOperators, followTokenSet, Token, Tokens } from '../constant/token';
 import type { FunctionDeclaration } from './function';
 import type { Identifier } from './identifier';
 
@@ -544,16 +544,7 @@ class ExpressionParser {
   }
 
   private isBooleanOperator(operator: Tokens): boolean {
-    return [
-      Tokens.LogicalAnd,
-      Tokens.LogicalOr,
-      Tokens.Equal,
-      Tokens.Inequal,
-      Tokens.LessThan,
-      Tokens.LessOrEqual,
-      Tokens.GreaterThan,
-      Tokens.GreaterOrEqual
-    ].includes(operator);
+    return booleanOperators.includes(operator);
   }
 
   private isExpressionBoundary(token: Tokens): boolean {

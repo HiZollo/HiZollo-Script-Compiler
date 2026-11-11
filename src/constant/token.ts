@@ -26,8 +26,9 @@ enum Tokens {
 const statementBeginning = [Tokens.Identifier, Tokens.LeftCurlyBracket, Tokens.LeftSquareBracket, Tokens.Write, Tokens.Arrow, Tokens.Import, Tokens.Dollar, Tokens.Number];
 const statementFollow = [...statementBeginning, Tokens.RightBracket];
 const expressionFollow = [...statementFollow, Tokens.RightSquareBracket, Tokens.RightCurlyBracket, Tokens.Comma];
-const termFollow = [ Tokens.Plus, Tokens.Minus, ...expressionFollow ];
-const factorFollow = [ Tokens.Multiply, Tokens.Divide, ...termFollow ];
+const booleanOperators = [Tokens.LogicalAnd, Tokens.LogicalOr, Tokens.Equal, Tokens.Inequal, Tokens.LessThan, Tokens.LessOrEqual, Tokens.GreaterThan, Tokens.GreaterOrEqual];
+const expressionOperators = [Tokens.Assign, Tokens.Plus, Tokens.Minus, Tokens.Multiply, Tokens.Divide, Tokens.Modulo, Tokens.Power, ...booleanOperators];
+const primaryExpressionFollow = [...expressionFollow, ...expressionOperators]
 
 const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.Include}`]: statementFollow,
@@ -42,8 +43,8 @@ const followTokenSet: Partial<Record<Tokens, Tokens[]>> = {
   [`${Tokens.LoopHead}`]: [Tokens.RightSquareBracket],
 
   [`${Tokens.Expression}`]: expressionFollow,
-  [`${Tokens.ModuleFunction}`]: expressionFollow,
-  [`${Tokens.FunctionCall}`]: expressionFollow,
+  [`${Tokens.ModuleFunction}`]: primaryExpressionFollow,
+  [`${Tokens.FunctionCall}`]: primaryExpressionFollow,
 
   [`${Tokens.FunctionDeclaration}`]: statementFollow,
   [`${Tokens.FunctionDeclarationParameter}`]: [Tokens.RightBracket, Tokens.LeftBracket],
@@ -76,4 +77,4 @@ class Token {
   }
 }
 
-export { Tokens, Token, followTokenSet, statementBeginning }
+export { Tokens, Token, followTokenSet, statementBeginning, booleanOperators }
