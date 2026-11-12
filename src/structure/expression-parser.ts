@@ -9,7 +9,8 @@ type CustomFunctionArgument = {
 };
 
 type ExpressionNode =
-  | { type: 'Atom'; code: string; assignable: boolean; token?: Token }
+  | { type: 'Error'; error: Errors, token: Token | null }
+  | { type: 'Atom'; code: string; assignable: boolean; token: Token }
   | { type: 'Unary'; operator: string; operand: ExpressionNode;  }
   | { type: 'Binary'; operator: Tokens; left: ExpressionNode; right: ExpressionNode; }
   | { type: 'Assignment'; left: ExpressionNode; right: ExpressionNode; }
@@ -148,7 +149,7 @@ class ExpressionParser {
       this.context.advance();
     }
 
-    return { type: 'Atom', code: '0', assignable: false };
+    return { type: 'Error', error: Errors.MissingExpression, token: token };
   }
 
   private parseParenthesis(): ExpressionNode {
@@ -170,7 +171,7 @@ class ExpressionParser {
     return expression;
   }
 
-  private getExpressionToken(expression: ExpressionNode): Token | undefined {
+  private getExpressionToken(expression: ExpressionNode): Token | null {
     switch (expression.type) {
       case 'Atom':
         return expression.token;
@@ -189,6 +190,9 @@ class ExpressionParser {
 
       case 'CustomFunction':
         return expression.name;
+
+      case 'Error':
+        return expression.token;
     }
   }
 
@@ -199,7 +203,7 @@ class ExpressionParser {
     if (!this.nowTokenIs(Tokens.Identifier)) {
       this.context.report(Errors.MissingIdentifier, this.context.current());
       this.context.recover(Tokens.FunctionCall);
-      return { type: 'Atom', code: '0', assignable: false };
+      return { type: 'Error', error: Errors.MissingIdentifier, token: this.context.current() };
     }
 
     const name = this.context.current()!;
@@ -208,7 +212,7 @@ class ExpressionParser {
     if (!this.nowTokenIs(Tokens.LeftBracket)) {
       this.context.report(Errors.MissingLeftBracket, this.context.current());
       this.context.recover(Tokens.FunctionCall);
-      return { type: 'Atom', code: '0', assignable: false };
+      return { type: 'Error', error: Errors.MissingLeftBracket, token: this.context.current() };
     }
 
     // 吃掉左括號
@@ -248,7 +252,7 @@ class ExpressionParser {
         ? Errors.OverloadNotFound
         : Errors.FunctionNotDefined;
       this.context.report(error, name);
-      return { type: 'Atom', code: '0', assignable: false};
+      return { type: 'Error', error: error, token: name };
     }
 
     // 依照函式宣告中的 byReference 決定參數轉換方式
@@ -275,7 +279,7 @@ class ExpressionParser {
     if (this.context.isModuleFunctionDisabled(name)) {
       this.context.report(Errors.UseDisabledModuleFunction, name);
       this.context.recover(Tokens.ModuleFunction);
-      return { type: 'Atom', code: '0', assignable: false };
+      return { type: 'Error', error: Errors.UseDisabledModuleFunction, token: name };
     }
 
     this.context.advance();
@@ -283,7 +287,7 @@ class ExpressionParser {
     if (!this.nowTokenIs(Tokens.LeftBracket)) {
       this.context.report(Errors.MissingLeftBracket, this.context.current());
       this.context.recover(Tokens.ModuleFunction);
-      return { type: 'Atom', code: '0', assignable: false };
+      return { type: 'Error', error: Errors.MissingLeftBracket, token: this.context.current() };
     }
 
     this.context.advance();
@@ -328,8 +332,7 @@ class ExpressionParser {
 
     if (!identifier) {
       this.context.report(Errors.IdentifierNotDefined, token);
-
-      return { type: 'Atom', code: '0', assignable: false };
+      return { type: 'Error', error: Errors.IdentifierNotDefined, token: token };
     }
 
     return { type: 'Atom', code: identifier.accessName, assignable: true, token };
@@ -366,6 +369,10 @@ class ExpressionParser {
     let code = '';
 
     switch (expression.type) {
+      case 'Error':
+        code = 'undefined';
+        break;
+
       case 'Atom':
         code = expression.code;
         break;
@@ -496,6 +503,7 @@ class ExpressionParser {
   private expressionPrecedence(expression: ExpressionNode): number {
     switch (expression.type) {
       case 'Atom':
+      case 'Error': 
       case 'ModuleFunction':
       case 'CustomFunction':
         return 100;
