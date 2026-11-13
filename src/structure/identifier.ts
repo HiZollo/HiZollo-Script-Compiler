@@ -13,7 +13,7 @@ class Identifier {
     this.name = token.value;
     this.level = level;
     this.byReference = byReference;
-    this.generatedName = `__hzs_C${level}_${this.name}`;
+    this.generatedName = this.byReference ? `__hzs_R${level}_${this.name}` : `__hzs_C${level}_${this.name}`;
     this.accessName = this.byReference ? `${this.generatedName}._ref` : this.generatedName;
   }
 }
