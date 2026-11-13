@@ -10,7 +10,7 @@ type CustomFunctionArgument = {
 
 type ExpressionNode =
   | { type: 'Error'; error: Errors, token: Token | null }
-  | { type: 'Atom'; code: string; assignable: boolean; token: Token }
+  | { type: 'Atom'; code: string; assignable: boolean; isReference: boolean; token: Token }
   | { type: 'Unary'; operator: string; operand: ExpressionNode;  }
   | { type: 'Binary'; operator: Tokens; left: ExpressionNode; right: ExpressionNode; }
   | { type: 'Assignment'; left: ExpressionNode; right: ExpressionNode; }
@@ -318,7 +318,7 @@ class ExpressionParser {
 
     if (token?.token === Tokens.String) {
       this.context.advance();
-      return { type: 'Atom', code: token.value, assignable: false, token };
+      return { type: 'Atom', code: token.value, assignable: false, isReference: false, token };
     }
 
     return this.parseAssignment();
@@ -335,13 +335,13 @@ class ExpressionParser {
       return { type: 'Error', error: Errors.IdentifierNotDefined, token: token };
     }
 
-    return { type: 'Atom', code: identifier.accessName, assignable: true, token };
+    return { type: 'Atom', code: identifier.generatedName, assignable: true, isReference: identifier.byReference, token };
   }
 
   private parseNumber(): ExpressionNode {
     const token = this.context.current()!;
     this.context.advance();
-    return { type: 'Atom', code: Number(token.value).toString(), assignable: false, token };
+    return { type: 'Atom', code: Number(token.value).toString(), assignable: false, isReference: false, token };
   }
 
   private parseBinary(next: () => ExpressionNode, operators: Tokens[]): ExpressionNode {
@@ -374,7 +374,7 @@ class ExpressionParser {
         break;
 
       case 'Atom':
-        code = expression.code;
+        code = expression.isReference ? `${expression.code}._ref` : expression.code
         break;
 
       case 'Unary': {
@@ -404,6 +404,7 @@ class ExpressionParser {
         const args = expression.args.map(({ expression: argument, byReference }) => {
           if (!byReference) return this.buildCode(argument);
           if (argument.type !== 'Atom' || !argument.assignable) return 'undefined';
+          if (argument.isReference) return argument.code;
 
           const target = argument.code;
           return `{get _ref(){return ${target};},set _ref(v){return ${target}=v;}}`;
