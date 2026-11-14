@@ -1,7 +1,7 @@
 import type { Parser } from '../structure/parser';
 import type { Token, Tokens } from './token';
 import { followTokenSet } from './token';
-import type { TranslateMap } from '../types/interfaces';
+import type { CompileError, TranslateMap } from '../types/interfaces';
 
 enum Errors {
   UnknownStatement,
@@ -67,53 +67,15 @@ const errorToString: Record<Errors, string> = {
   [`${Errors.MissingExpression}`]: "遺漏運算式"
 }
 
-function ThrowError(parser: Parser, errorType: Errors, token: Token | null): void {
-  if (!token) {
-    const lastToken = parser['tokens'][parser['tokens'].length-1];
-    if (!lastToken) return;
-    token = lastToken
-  }
-  parser.errorCount++;
-  let output: string = '****';
-  for (let i = 0; i<token.right-token.value.length+1; i++) {
-    output += ' ';
-  }
-  parser['movePointerToNext']();
-  for (let i = 0; i<token.value.length; i++) {
-    output += '~';
-  }
-  const errorText = errorToString[errorType]
-  if (!errorText) return
-  parser.errorMessages.textify +=
-    fiveDigits(token.left)+parser.getSource()[token.left-1]
-    + '\n' +
-    `${output} ${errorText}`
-    + '\n';
-  parser.errorMessages.errors.push({
+function getErrorReport(errorType: Errors, token: Token): CompileError {
+  return {
     error: errorType,
-    errorText,
+    errorText: errorToString[errorType],
     line: token.left,
     column: token.right,
     token: token
-  });
+  };
 }
 
-function skip(parser: Parser, nowToken: Tokens): void {
-  if (!parser.nowToken) return;
-  const followToken = followTokenSet[nowToken];
-  if (!followToken) return;
 
-  while (parser.nowToken && !followToken.includes(parser.nowToken.token)) {
-    parser['movePointerToNext']();
-  }
-}
-
-function fiveDigits(num: number): string {
-  return (
-    num > 999 ? `${num} ` :
-    num > 99 ? ` ${num} ` :
-    num > 9 ? `  ${num} ` : `   ${num} `
-  );
-}
-
-export { Errors, ThrowError, skip }
+export { Errors, getErrorReport }

@@ -1,7 +1,7 @@
 import { Scanner } from './scanner';
 import { Identifier, IdentifierTable } from './identifier';
-import { statementBeginning, Token, Tokens } from '../constant/token';
-import { Errors, ThrowError, skip } from '../constant/errors';
+import { followTokenSet, statementBeginning, Token, Tokens } from '../constant/token';
+import { Errors, getErrorReport } from '../constant/errors';
 import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
 import { FunctionDeclaration, FunctionTable } from './function';
@@ -40,8 +40,8 @@ class Parser {
       current: () => this.nowToken,
       peek: () => this.tokens[this.pointer + 1] ?? null,
       advance: () => this.movePointerToNext(),
-      report: (error, token) => { ThrowError(this, error, token); },
-      recover: (nonterminal) => { skip(this, nonterminal); },
+      report: (error, token) => { this.reportError(error, token); },
+      recover: (nonterminal) => { this.recover(nonterminal); },
       getIdentifier: (name) => this.getResolvedIdentifier(name),
       isModuleFunctionDisabled: (name) => this.functionDisabled(name),
       getFunction: (name, arity) => this.functionTable.getVisible(name, arity, this.nowLevel),
@@ -123,8 +123,8 @@ class Parser {
     if (success) return;
 
     // 如果有，擲出變數重複宣告錯誤
-    ThrowError(this, Errors.RedeclareIdentifier, identifier.token);
-    skip(this, Tokens.Declaration);
+    this.reportError(Errors.RedeclareIdentifier, identifier.token);
+    this.recover(Tokens.Declaration);
   }
 
   // 檢查指定變數的層級
@@ -158,6 +158,43 @@ class Parser {
     this.nowLevel--;
   }
 
+  // 拋出編譯錯誤
+  private reportError(errorType: Errors, token: Token | null): void {
+    if (!token) {
+      const lastToken = this.tokens[this.tokens.length - 1]
+      if (!lastToken) return;
+      token = lastToken
+    }
+    const report = getErrorReport(errorType, token)
+    this.errorCount++;
+    this.movePointerToNext();
+    this.errorMessages.errors.push(report)
+
+    let output: string = '****';
+    for (let i = 0; i<token.right-token.value.length+1; i++) {
+      output += ' ';
+    }
+    for (let i = 0; i<token.value.length; i++) {
+      output += '~';
+    }
+
+    this.errorMessages.textify +=
+      fiveDigits(token.left)+this.getSource()[token.left-1]
+      + '\n' +
+      `${output} ${report.errorText}`
+      + '\n';
+  }
+
+  // 從編譯錯誤中回復
+  private recover(target: Tokens) {
+    if (!this.nowToken) return;
+    const followToken = followTokenSet[target];
+    if (!followToken) return;
+
+    while (this.nowToken && !followToken.includes(this.nowToken.token)) {
+      this.movePointerToNext()
+    }
+  }
 
   // 建碼函式
   private buildCode(code: string): void {
@@ -234,26 +271,26 @@ class Parser {
 
         // 不能手動引入核心模組
         if (moduleName === 'core') {
-          ThrowError(this, Errors.CantImportCoreModule, this.nowToken);
+          this.reportError(Errors.CantImportCoreModule, this.nowToken);
           this.revert();
-          skip(this, Tokens.Include);
+          this.recover(Tokens.Include);
           return;
         }
 
         // importedModule 存有已經被引入的模組名稱，防止使用者重複引入
         if (this.importedModule.includes(moduleName)) {
-          ThrowError(this, Errors.AlreadyImported, this.nowToken);
+          this.reportError(Errors.AlreadyImported, this.nowToken);
           this.revert();
-          skip(this, Tokens.Include);
+          this.recover(Tokens.Include);
           return;
         }
 
         const pathOrCode = this.includePath[moduleName];
         // 找不到模組
         if (!pathOrCode) {
-          ThrowError(this, Errors.ModuleNotFound, this.nowToken);
+          this.reportError(Errors.ModuleNotFound, this.nowToken);
           this.revert();
-          skip(this, Tokens.Include);
+          this.recover(Tokens.Include);
           return;
         }
 
@@ -270,8 +307,8 @@ class Parser {
         return;
       }
       this.revert();
-      ThrowError(this, Errors.MissingModuleName, this.nowToken);
-      skip(this, Tokens.Include);
+      this.reportError(Errors.MissingModuleName, this.nowToken);
+      this.recover(Tokens.Include);
       return;
     }
 
@@ -284,8 +321,8 @@ class Parser {
 
     // 當遇到 Import Token 時，因匯入敘述只能放在程式開頭，便報錯
     if (this.nowTokenIs(Tokens.Import)) {
-      ThrowError(this, Errors.LateImport, this.nowToken);
-      skip(this, Tokens.Statement);
+      this.reportError(Errors.LateImport, this.nowToken);
+      this.recover(Tokens.Statement);
       return;
     }
 
@@ -324,8 +361,8 @@ class Parser {
 
         if (!this.nowTokenIs(Tokens.Identifier)) {
           this.revert();
-          ThrowError(this, Errors.MissingIdentifier, this.nowToken);
-          skip(this, Tokens.Statement);
+          this.reportError(Errors.MissingIdentifier, this.nowToken);
+          this.recover(Tokens.Statement);
           return;
         }
 
@@ -386,8 +423,8 @@ class Parser {
         return;
       }
 
-      ThrowError(this, Errors.InappropriateBreakStatement, this.nowToken);
-      skip(this, Tokens.Statement);
+      this.reportError(Errors.InappropriateBreakStatement, this.nowToken);
+      this.recover(Tokens.Statement);
       return;
     }
 
@@ -409,8 +446,8 @@ class Parser {
       }
 
       if (!this.nowTokenIs(Tokens.Identifier)) {
-        ThrowError(this, Errors.MissingIdentifier, this.nowToken);
-        skip(this, Tokens.Statement);
+        this.reportError(Errors.MissingIdentifier, this.nowToken);
+        this.recover(Tokens.Statement);
         return;
       }
 
@@ -432,7 +469,7 @@ class Parser {
       return;
     }
 
-    ThrowError(this, Errors.UnknownStatement, this.nowToken);
+    this.reportError(Errors.UnknownStatement, this.nowToken);
   }
 
   // 宣告敘述檢查
@@ -455,8 +492,8 @@ class Parser {
         this.buildCode("{");
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-        skip(this, Tokens.If);
+        this.reportError(Errors.MissingLeftBracket, this.nowToken);
+        this.recover(Tokens.If);
       }
 
       // 如果是一個敘述就解析
@@ -470,8 +507,8 @@ class Parser {
         this.buildCode('}');
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-        skip(this, Tokens.If);
+        this.reportError(Errors.MissingRightBracket, this.nowToken);
+        this.recover(Tokens.If);
       }
     } finally {
       // 離開區塊的清理動作
@@ -505,8 +542,8 @@ class Parser {
       this.buildCode(`)`);
       this.movePointerToNext();
     } else {
-      ThrowError(this, Errors.MissingRightCurlyBracket, this.nowToken);
-      skip(this, Tokens.IfHead);
+      this.reportError(Errors.MissingRightCurlyBracket, this.nowToken);
+      this.recover(Tokens.IfHead);
     }
   }
 
@@ -521,8 +558,8 @@ class Parser {
         this.buildCode('else{');
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-        skip(this, Tokens.Else);
+        this.reportError(Errors.MissingLeftBracket, this.nowToken);
+        this.recover(Tokens.Else);
       }
 
       // 如果是一個敘述就解析
@@ -536,7 +573,7 @@ class Parser {
         this.buildCode('}');
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingRightBracket, this.nowToken);
+        this.reportError(Errors.MissingRightBracket, this.nowToken);
       }
     } finally {
       // 離開區塊的清理動作
@@ -559,16 +596,16 @@ class Parser {
       } else if (this.nowTokenIs(Tokens.Identifier)) {
         this.ForHead();
       } else {
-        ThrowError(this, Errors.UnknownLoopSyntax, this.nowToken);
-        skip(this, Tokens.LoopHead)
+        this.reportError(Errors.UnknownLoopSyntax, this.nowToken);
+        this.recover(Tokens.LoopHead)
       }
 
       // 檢查結尾的 ] 
       if (this.nowTokenIs(Tokens.RightSquareBracket)) {
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingRightSquareBracket, this.nowToken);
-        skip(this, Tokens.Loop);
+        this.reportError(Errors.MissingRightSquareBracket, this.nowToken);
+        this.recover(Tokens.Loop);
         return; // 少了 ] 就放棄這個迴圈
       }
 
@@ -576,8 +613,8 @@ class Parser {
       if (this.nowTokenIs(Tokens.LeftBracket)) {
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-        skip(this, Tokens.Loop);
+        this.reportError(Errors.MissingLeftBracket, this.nowToken);
+        this.recover(Tokens.Loop);
         return;
       }
 
@@ -595,7 +632,7 @@ class Parser {
       if (this.nowTokenIs(Tokens.RightBracket)) {
         this.movePointerToNext();
       } else {
-        ThrowError(this, Errors.MissingRightBracket, this.nowToken);
+        this.reportError(Errors.MissingRightBracket, this.nowToken);
       }
 
       this.buildCode("}");
@@ -624,8 +661,8 @@ class Parser {
     if (this.nowTokenIs(Tokens.RightCurlyBracket)) {
       this.movePointerToNext();
     } else {
-      ThrowError(this, Errors.MissingRightCurlyBracket, this.nowToken);
-      skip(this, Tokens.LoopHead);
+      this.reportError(Errors.MissingRightCurlyBracket, this.nowToken);
+      this.recover(Tokens.LoopHead);
       return;
     }
 
@@ -644,8 +681,8 @@ class Parser {
     if (this.nowTokenIs(Tokens.Assign)) {
       this.movePointerToNext();
     } else {
-      ThrowError(this, Errors.MissingAssignOperator, this.nowToken);
-      skip(this, Tokens.LoopHead);
+      this.reportError(Errors.MissingAssignOperator, this.nowToken);
+      this.recover(Tokens.LoopHead);
     }
 
     this.buildCode("=");
@@ -657,8 +694,8 @@ class Parser {
     if (this.nowTokenIs(Tokens.Arrow)) {
       this.movePointerToNext();
     } else {
-      ThrowError(this, Errors.MissingArrow, this.nowToken);
-      skip(this, Tokens.LoopHead);
+      this.reportError(Errors.MissingArrow, this.nowToken);
+      this.recover(Tokens.LoopHead);
       return;
     }
 
@@ -692,7 +729,7 @@ class Parser {
   private Identifier(checkExist = true, build = true, idToken = this.nowToken): void {
     // 如果不是識別字就是有問題
     if (idToken?.token !== Tokens.Identifier) {
-      ThrowError(this, Errors.MissingIdentifier, this.nowToken);
+      this.reportError(Errors.MissingIdentifier, this.nowToken);
       return;
     }
 
@@ -703,7 +740,7 @@ class Parser {
 
     // 抓取不到代表沒有宣告
     if (checkExist && !identifier) {
-      ThrowError(this, Errors.IdentifierNotDefined, this.nowToken);
+      this.reportError(Errors.IdentifierNotDefined, this.nowToken);
       return;
     }
 
@@ -724,8 +761,8 @@ class Parser {
       return;
     }
     // 否則丟出遺漏字串錯誤
-    ThrowError(this, Errors.MissingString, this.nowToken);
-    skip(this, Tokens.Statement);
+    this.reportError(Errors.MissingString, this.nowToken);
+    this.recover(Tokens.Statement);
   }
 
   // 宣告函式
@@ -736,8 +773,8 @@ class Parser {
     this.movePointerToNext();
 
     if (!this.nowTokenIs(Tokens.LeftBracket)) {
-      ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
-      skip(this, Tokens.FunctionDeclaration);
+      this.reportError(Errors.MissingLeftBracket, this.nowToken);
+      this.recover(Tokens.FunctionDeclaration);
       return;
     }
 
@@ -758,8 +795,8 @@ class Parser {
 
       // 函式參數只能是識別字
       if (!this.nowTokenIs(Tokens.Identifier)) {
-        ThrowError(this, Errors.InvalidFunctionParameter, this.nowToken);
-        skip(this, Tokens.FunctionDeclarationParameter);
+        this.reportError(Errors.InvalidFunctionParameter, this.nowToken);
+        this.recover(Tokens.FunctionDeclarationParameter);
         break;
       }
 
@@ -767,8 +804,8 @@ class Parser {
 
       // 如果已經出現在參數列表
       if (parameterNames.has(parameterToken.value)) {
-        ThrowError(this, Errors.RedeclareParameter, parameterToken);
-        skip(this, Tokens.FunctionDeclarationParameter);
+        this.reportError(Errors.RedeclareParameter, parameterToken);
+        this.recover(Tokens.FunctionDeclarationParameter);
         break;
       }
 
@@ -789,8 +826,8 @@ class Parser {
 
     // 參數列以右括號結尾
     if (!this.nowTokenIs(Tokens.RightBracket)) {
-      ThrowError(this, Errors.MissingRightBracket, this.nowToken);
-      skip(this, Tokens.FunctionDeclarationParameter);
+      this.reportError(Errors.MissingRightBracket, this.nowToken);
+      this.recover(Tokens.FunctionDeclarationParameter);
     }
 
     this.movePointerToNext()
@@ -798,8 +835,8 @@ class Parser {
     // 宣告函式
     const declaration = new FunctionDeclaration(functionToken, declarationLevel, parameters);
     if (!this.functionTable.declare(declaration)) {
-      ThrowError(this, Errors.RedeclareFunction, functionToken);
-      skip(this, Tokens.FunctionDeclaration);
+      this.reportError(Errors.RedeclareFunction, functionToken);
+      this.recover(Tokens.FunctionDeclaration);
       return;
     }
 
@@ -818,7 +855,7 @@ class Parser {
         // 而這個區塊除了這幾個參數沒有其他識別字
         // 但仍然例行性的檢查
         if (!this.idTable.declare(parameter)) {
-          ThrowError(this, Errors.RedeclareIdentifier, parameter.token);
+          this.reportError(Errors.RedeclareIdentifier, parameter.token);
         }
       }
 
@@ -826,7 +863,7 @@ class Parser {
 
       // 左括號表示進入函式區域
       if (!this.nowTokenIs(Tokens.LeftBracket)) {
-        ThrowError(this, Errors.MissingLeftBracket, this.nowToken);
+        this.reportError(Errors.MissingLeftBracket, this.nowToken);
         return;
       }
       this.movePointerToNext()
@@ -838,8 +875,8 @@ class Parser {
 
       // 結束函式區域
       if (!this.nowTokenIs(Tokens.RightBracket)) {
-        ThrowError(this, Errors.MissingRightBracket, this.nowToken)
-        skip(this, Tokens.FunctionDeclaration)
+        this.reportError(Errors.MissingRightBracket, this.nowToken)
+        this.recover(Tokens.FunctionDeclaration)
         return;
       }
 
@@ -855,8 +892,8 @@ class Parser {
 
   private ReturnStatement(): void {
     if (!this.insideFunction) {
-      ThrowError(this, Errors.ReturnOutsideFunction, this.nowToken);
-      skip(this, Tokens.ReturnStatement);
+      this.reportError(Errors.ReturnOutsideFunction, this.nowToken);
+      this.recover(Tokens.ReturnStatement);
       return;
     }
     this.movePointerToNext();
@@ -871,6 +908,14 @@ class Parser {
     this.buildCode(";")
   }
 
+}
+
+function fiveDigits(num: number): string {
+  return (
+    num > 999 ? `${num} ` :
+    num > 99 ? ` ${num} ` :
+    num > 9 ? `  ${num} ` : `   ${num} `
+  );
 }
 
 export { Parser }
