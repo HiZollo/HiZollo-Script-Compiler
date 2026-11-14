@@ -3,13 +3,15 @@ import { Token, Tokens } from '../constant/token';
 type textIdType = string | -1;
 
 class Scanner {
-  private source: string[];
-  private nextWord: textIdType;
-  private linePosition: number;
-  private charPosition: number;
-  private currentLine: string;
+  private source: string[] = [];
+  private nextWord: textIdType = '';
+  private linePosition: number = 0;
+  private charPosition: number = 0;
+  private currentLine: string = '';
 
-  constructor() {
+  constructor() {}
+
+  public init(): void {
     this.source = [];
     this.nextWord = '';
     this.linePosition = 0;

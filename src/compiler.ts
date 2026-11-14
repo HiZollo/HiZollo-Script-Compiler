@@ -4,6 +4,7 @@ import type { CompilerOptions, CompileResult, PathMapWithCore } from './types/in
 import bootstrapCode from 'virtual:hzscript-bootstrap';
 
 class Compiler {
+  private scanner: Scanner;
   private parser: Parser;
   private includes: PathMapWithCore;
   private disabledFunctions
@@ -14,14 +15,15 @@ class Compiler {
     Object.assign(this.includes, includes);
 
     this.disabledFunctions = disabledFunctions;
+    this.scanner = new Scanner();
     this.parser = new Parser(this.includes, this.disabledFunctions, bootstrapCode);
   }
 
   public compile(source: string): CompileResult {
-    const scanner = new Scanner();
-    scanner.read(source);
+    this.scanner.init();
+    this.scanner.read(source);
 
-    this.parser.init(scanner);
+    this.parser.init(this.scanner);
     this.parser.parse();
 
     return {
