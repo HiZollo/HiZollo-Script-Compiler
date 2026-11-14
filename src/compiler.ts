@@ -29,6 +29,7 @@ class Compiler {
     this.parser.init(this.scanner);
     const parserResult = this.parser.parse();
 
+    this.moduleResolver.init();
     const resolverResult = this.moduleResolver.resolve(parserResult.explicitImportedModule)
 
     const errors = [...resolverResult.errors, ...parserResult.errors]
