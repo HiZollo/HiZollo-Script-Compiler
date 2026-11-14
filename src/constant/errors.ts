@@ -1,7 +1,5 @@
-import type { Parser } from '../structure/parser';
-import type { Token, Tokens } from './token';
-import { followTokenSet } from './token';
-import type { CompileError, TranslateMap } from '../types/interfaces';
+import type { Token } from './token';
+import type { CompileError } from '../types/interfaces';
 
 enum Errors {
   UnknownStatement,
