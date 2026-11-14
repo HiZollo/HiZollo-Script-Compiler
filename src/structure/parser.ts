@@ -9,7 +9,6 @@ import { ExpressionParser } from './expression-parser';
 
 class Parser {
   private getToken: () => Token | null = () => null;
-  private source: string[] = [];
   private tokens: Token[] = [];
   private pointer: number = -1;
   private endImport: boolean = false;
@@ -52,7 +51,6 @@ class Parser {
     this.getToken = scanner.nextToken.bind(scanner);
 
     // 重新初始化
-    this.source = scanner.getSource();
     this.tokens = [];
     this.pointer = -1;
     this.endImport = false;
@@ -77,11 +75,6 @@ class Parser {
     do {
       this.nowToken = this.getToken();
     } while (this.nowTokenIs(Tokens.Comments));
-  }
-
-  // 提供外部取得原始碼的方法
-  public getSource(): string[] {
-    return [...this.source];
   }
 
   // 載入所有 Token
@@ -188,13 +181,8 @@ class Parser {
 
   // 開始轉換
   public parse(): ParserResult {
-    // 如果是空檔案就直接結束
-    if (!this.source.filter(v => v.trim().length > 0).length) return { errors: [], transpiledCode: '', explicitImportedModule: [] }
-
     // 載入所有 Token
     this.loadAllToken();
-    if (this.tokens.length === 0) return { errors: [], transpiledCode: '', explicitImportedModule: [] }
-
     // 設定目前原始碼巢狀深度
     this.nowLevel = 1;
 
@@ -205,11 +193,6 @@ class Parser {
       : readFileSync(this.includePath['core'], 'utf-8');
 
     this.addModuleCode(coreModuleCode.trim() + '\n');
-
-    // 如果 Scanner 不小心掃到尾巴，這裡把他拿掉
-    const lastToken = this.tokens[this.tokens.length - 1]
-    // @ts-ignore
-    if (!lastToken || lastToken.value === -1 || lastToken.value === '-1') this.tokens.pop();
 
     // 指標開始移動
     this.movePointerToNext();
