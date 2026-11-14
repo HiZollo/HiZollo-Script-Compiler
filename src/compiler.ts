@@ -2,10 +2,12 @@ import { Scanner } from './structure/scanner';
 import { Parser } from './structure/parser';
 import type { CompilerOptions, CompileResult, PathMapWithCore, CompileError } from './types/interfaces';
 import bootstrapCodeTemplate from 'virtual:hzscript-bootstrap';
+import { ModuleResolver } from './structure/module-resolver';
 
 class Compiler {
   private scanner: Scanner;
   private parser: Parser;
+  private moduleResolver: ModuleResolver;
   private includes: PathMapWithCore;
   private disabledFunctions
 
@@ -16,7 +18,8 @@ class Compiler {
 
     this.disabledFunctions = disabledFunctions;
     this.scanner = new Scanner();
-    this.parser = new Parser(this.includes, this.disabledFunctions);
+    this.parser = new Parser(this.disabledFunctions);
+    this.moduleResolver = new ModuleResolver(this.includes);
   }
 
   public compile(source: string): CompileResult {
@@ -26,23 +29,24 @@ class Compiler {
     this.parser.init(this.scanner);
     const parserResult = this.parser.parse();
 
-    const textifiedErrors = this.makeErrorMessage(parserResult.errors);
+    const resolverResult = this.moduleResolver.resolve(parserResult.explicitImportedModule)
 
-    const importedModule = parserResult.explicitImportedModule;
+    const errors = [...resolverResult.errors, ...parserResult.errors]
+    const textifiedErrors = this.makeErrorMessage(errors);
 
     // 生成 Runtime Bootstrap
-    const moduleList = JSON.stringify(Object.fromEntries(importedModule.map(name => [name, true])))
+    const moduleList = JSON.stringify(Object.fromEntries(resolverResult.importedModule.map(name => [name, true])))
     const disabledModuleFunctionsList = JSON.stringify(Object.fromEntries(this.disabledFunctions.map(name => [name, true])))
     const bootstrapCode = bootstrapCodeTemplate
       .replace("__HZS_MODULE_LIST__", moduleList)
       .replace("__HZS_DISABLED_MODULE_FUNCTIONS_LIST__", disabledModuleFunctionsList)
-    const resultCode = `${bootstrapCode}${this.parser.result}`
+    const resultCode = `${bootstrapCode}${resolverResult.moduleCode}${parserResult.transpiledCode}`;
 
     return {
-      errorCount: parserResult.errors.length,
+      errorCount: errors.length,
       errorMessages: {
         textify: textifiedErrors,
-        errors: parserResult.errors
+        errors: errors
       },
       build: {
         partial: parserResult.transpiledCode,

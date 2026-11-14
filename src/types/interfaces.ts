@@ -4,7 +4,13 @@ import type { Token, Tokens } from '../constant/token';
 export interface ParserResult {
   errors: CompileError[],
   transpiledCode: string,
-  explicitImportedModule: string[]
+  explicitImportedModule: Token[]
+}
+
+export interface ModuleResolverResult {
+  errors: CompileError[],
+  moduleCode: string,
+  importedModule: string[]
 }
 
 export interface CompileResult {
