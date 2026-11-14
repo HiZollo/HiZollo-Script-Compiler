@@ -45,8 +45,20 @@ class ModuleResolver {
       }
 
       // 讀取模組並建碼
-      const code = this.readModule(pathOrCode);
-      moduleCode += code.trim() + '\n';
+      try {
+        const code = this.readModule(pathOrCode);
+        moduleCode += code.trim() + '\n';
+      } catch(error) {
+        const errorCode = error instanceof Error && 'code' in error && typeof error.code === 'string' ? error.code : null;
+
+        if (errorCode === 'ENOENT' || errorCode === 'ENOTDIR') {
+          reportError(Errors.ModuleNotFound, token);
+          continue;
+        }
+
+        reportError(Errors.ModuleLoadFailed, token);
+        continue;
+      }
 
       importedModuleSet.add(moduleName);
       importedModule.push(moduleName);
