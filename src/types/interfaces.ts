@@ -26,7 +26,7 @@ export interface BuildResult {
 
 export interface CompilerOptions {
   includes: PathMap
-  disabledFunctions: string[]
+  disabledFunctions?: string[]
 }
 
 export interface PathMap {
