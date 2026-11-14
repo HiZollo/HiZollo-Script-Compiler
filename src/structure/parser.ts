@@ -2,7 +2,7 @@ import { Scanner } from './scanner';
 import { Identifier, IdentifierTable } from './identifier';
 import { followTokenSet, statementBeginning, Token, Tokens } from '../constant/token';
 import { Errors, getErrorReport } from '../constant/errors';
-import type { PathMapWithCore, ErrorOutput } from '../types/interfaces';
+import type { PathMapWithCore, ParserResult, CompileError } from '../types/interfaces';
 import { readFileSync } from 'node:fs';
 import { FunctionDeclaration, FunctionTable } from './function';
 import { ExpressionParser } from './expression-parser';
@@ -26,8 +26,7 @@ class Parser {
   private tempCounter: bigint = 0n;
 
   public nowToken: Token | null = null;
-  public errorCount: number = 0;
-  public errorMessages: ErrorOutput = { textify: '', errors: [] };
+  public errors: CompileError[] = [];
   public result: string = '';
   public moduleCode: string = '';
   public transpiledCode: string = '';
@@ -65,8 +64,7 @@ class Parser {
     this.tempCounter = 0n;
 
     this.nowToken = null;
-    this.errorMessages = { textify: '', errors: [] };
-    this.errorCount = 0;
+    this.errors = [];
     this.result = '';
     this.moduleCode = '';
     this.transpiledCode = '';
@@ -166,23 +164,8 @@ class Parser {
       token = lastToken
     }
     const report = getErrorReport(errorType, token)
-    this.errorCount++;
+    this.errors.push(report)
     this.movePointerToNext();
-    this.errorMessages.errors.push(report)
-
-    let output: string = '****';
-    for (let i = 0; i<token.right-token.value.length+1; i++) {
-      output += ' ';
-    }
-    for (let i = 0; i<token.value.length; i++) {
-      output += '~';
-    }
-
-    this.errorMessages.textify +=
-      fiveDigits(token.left)+this.getSource()[token.left-1]
-      + '\n' +
-      `${output} ${report.errorText}`
-      + '\n';
   }
 
   // 從編譯錯誤中回復
@@ -206,13 +189,13 @@ class Parser {
   }
 
   // 開始轉換
-  public parse(): void {
+  public parse(): ParserResult {
     // 如果是空檔案就直接結束
-    if (!this.source.filter(v => v.trim().length > 0).length) return;
+    if (!this.source.filter(v => v.trim().length > 0).length) return { errors: [], transpiledCode: '', explicitImportedModule: [] }
 
     // 載入所有 Token
     this.loadAllToken();
-    if (this.tokens.length === 0) return;
+    if (this.tokens.length === 0) return { errors: [], transpiledCode: '', explicitImportedModule: [] }
 
     // 設定目前原始碼巢狀深度
     this.nowLevel = 1;
@@ -258,6 +241,12 @@ class Parser {
       .replace("__HZS_DISABLED_MODULE_FUNCTIONS_LIST__", disabledModuleFunctionsList)
 
     this.result = `${bootstrapCode}${this.moduleCode}${this.transpiledCode}`
+
+    return {
+      errors: this.errors,
+      transpiledCode: this.transpiledCode,
+      explicitImportedModule: this.importedModule
+    }
   }
 
   /** 以下全為規則 **/
@@ -908,14 +897,6 @@ class Parser {
     this.buildCode(";")
   }
 
-}
-
-function fiveDigits(num: number): string {
-  return (
-    num > 999 ? `${num} ` :
-    num > 99 ? ` ${num} ` :
-    num > 9 ? `  ${num} ` : `   ${num} `
-  );
 }
 
 export { Parser }

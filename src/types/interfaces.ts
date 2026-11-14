@@ -1,6 +1,12 @@
 import type { Errors } from '../constant/errors';
 import type { Token, Tokens } from '../constant/token';
 
+export interface ParserResult {
+  errors: CompileError[],
+  transpiledCode: string,
+  explicitImportedModule: string[]
+}
+
 export interface CompileResult {
   errorCount: number,
   errorMessages: ErrorOutput,

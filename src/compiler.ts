@@ -1,6 +1,6 @@
 import { Scanner } from './structure/scanner';
 import { Parser } from './structure/parser';
-import type { CompilerOptions, CompileResult, PathMapWithCore } from './types/interfaces';
+import type { CompilerOptions, CompileResult, PathMapWithCore, CompileError } from './types/interfaces';
 import bootstrapCode from 'virtual:hzscript-bootstrap';
 
 class Compiler {
@@ -24,19 +24,50 @@ class Compiler {
     this.scanner.read(source);
 
     this.parser.init(this.scanner);
-    this.parser.parse();
+    const parserResult = this.parser.parse();
+
+    const textifiedErrors = this.makeErrorMessage(parserResult.errors);
 
     return {
-      errorCount: this.parser.errorCount,
-      errorMessages: this.parser.errorMessages,
+      errorCount: parserResult.errors.length,
+      errorMessages: {
+        textify: textifiedErrors,
+        errors: parserResult.errors
+      },
       build: {
-        partial: this.parser.transpiledCode,
+        partial: parserResult.transpiledCode,
         full: this.parser.result
       }
     }
 
   }
 
+  private makeErrorMessage(errors: CompileError[]): string {
+    let result = '';
+    for (const error of errors) {
+      let output: string = '****';
+      for (let i = 0; i<error.token.right-error.token.value.length+1; i++) {
+        output += ' ';
+      }
+      for (let i = 0; i<error.token.value.length; i++) {
+        output += '~';
+      }
+      result += 
+        fiveDigits(error.token.left)+this.scanner.getSource()[error.token.left-1]
+        + '\n' +
+        `${output} ${error.errorText}`
+        + '\n';
+    }
+    return result;
+  }
+}
+
+function fiveDigits(num: number): string {
+  return (
+    num > 999 ? `${num} ` :
+    num > 99 ? ` ${num} ` :
+    num > 9 ? `  ${num} ` : `   ${num} `
+  );
 }
 
 export { Compiler };
