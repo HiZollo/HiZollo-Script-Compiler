@@ -173,7 +173,7 @@ function fromB() {
   assert.deepEqual(error.details.cycle, ['A', 'B', 'A']);
 });
 
-test('module preamble: #require detects circular dependencies', () => {
+test('module preamble: #require detects implicit circular dependencies', () => {
   const compiler = createCompiler({
     includes: {
       A: `code:// #require "B"
@@ -181,17 +181,21 @@ test('module preamble: #require detects circular dependencies', () => {
 function fromA() {
   return "A";
 }`,
-
       B: `code:// #require "A"
 
 function fromB() {
   return "B";
+}`,
+      C: `code:// #require "A"
+
+function fromC() {
+  return "C"
 }`
     }
   });
 
   const result = compile(`
->>> "A"
+>>> "C"
 `, compiler);
 
   assertContainsError(result, Errors.CircularDependency, '#require circular dependency'
