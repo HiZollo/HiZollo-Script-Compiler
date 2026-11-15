@@ -81,10 +81,6 @@ class ModuleResolver {
     };
   }
 
-  // ==================================================
-  // Module Loading
-  // ==================================================
-
   private loadCoreModule(): void {
     const source = this.readModule(this.includePath.core);
     this.moduleCode += source.trim() + '\n';
