@@ -61,3 +61,8 @@ function __hzs_invoke(name, ...args) {
   }
   return func(...args);
 }
+
+function __hzs_has_module(name) {
+  if (typeof name !== "string") return false;
+  return name === "core" || !!globalThis.__hzs__.__module__[name]
+}
