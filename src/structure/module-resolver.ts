@@ -23,6 +23,7 @@ interface ModuleDependency {
 interface ParsedModule {
   body: string;
   dependencies: ModuleDependency[];
+  noImport: boolean;
 }
 
 class ModuleResolver {
@@ -31,6 +32,7 @@ class ModuleResolver {
   private explicitImportedSet: Set<string> = new Set<string>();
   private moduleStates: Map<string, ModuleState> = new Map<string, ModuleState>();
   private moduleFailure: Map<string, ModuleFailure> = new Map<string, ModuleFailure>();
+  private parsedModules: Map<string, ParsedModule> = new Map<string, ParsedModule>();
   private resolvingStack: string[] = [];
   private moduleCode: string = '';
   constructor(private readonly includePath: PathMapWithCore) {}
@@ -42,6 +44,7 @@ class ModuleResolver {
     this.explicitImportedSet.clear();
     this.moduleStates.clear();
     this.moduleFailure.clear();
+    this.parsedModules.clear()
 
     this.resolvingStack = [];
     this.moduleCode = '';
@@ -103,12 +106,21 @@ class ModuleResolver {
   }
 
   private loadModule(name: string): ParsedModule {
+    const cached = this.parsedModules.get(name);
+    if (cached) return cached;
+
     const source = this.readModuleByName(name);
 
     const { preamble, body } = this.extractPreamble(source);
-    const dependencies = this.parseDependencies(preamble);
 
-    return { body, dependencies };
+    const module: ParsedModule = {
+      body,
+      dependencies: this.parseDependencies(preamble),
+      noImport: this.parseNoImport(preamble)
+    };
+
+    this.parsedModules.set(name, module);
+    return module;
   }
 
   private extractPreamble(source: string): ExtractedPreamble {
@@ -134,9 +146,6 @@ class ModuleResolver {
     };
   }
 
-  /**
-   * Parse dependency declarations from the preamble.
-   */
   private parseDependencies(preamble: string): ModuleDependency[] {
     const dependencies: ModuleDependency[] = [];
 
@@ -149,6 +158,19 @@ class ModuleResolver {
 
     return dependencies;
   }
+
+  private parseNoImport(preamble: string): boolean {
+    return preamble.split(/\r?\n/).some(line =>
+      /^\/\/\s*#noimport\s*$/.test(line.trim())
+    );
+  }
+
+  private validateImportPolicy(module: ParsedModule, isDependency: boolean, originToken: Token): boolean {
+  if (!module.noImport || isDependency) return true;
+
+  this.reportError(Errors.CantImportNoImportModule, originToken);
+  return false;
+}
 
   private resolveDependencies(dependencies: ModuleDependency[], originToken: Token): boolean {
     const seen = new Set<string>();
@@ -167,6 +189,14 @@ class ModuleResolver {
   }
 
   private resolveModule(moduleName: string, originToken: Token, isDependency: boolean): boolean {
+    // 優先取得已解析的模組資訊
+    let module = this.parsedModules.get(moduleName);
+
+    // 檢查引入權限
+    if (module && !this.validateImportPolicy(module, isDependency, originToken)) {
+      return false;
+    }
+
     const state = this.moduleStates.get(moduleName);
     if (state === 'resolved') return true;
     if (state === 'failed') {
@@ -191,7 +221,17 @@ class ModuleResolver {
     this.resolvingStack.push(moduleName);
 
     try {
-      const module = this.loadModule(moduleName);
+      // 尚未解析過 metadata 時才讀取模組
+      if (!module) {
+        module = this.loadModule(moduleName);
+
+        // 載入後立即檢查引入權限
+        if (!this.validateImportPolicy(module, isDependency, originToken)) {
+          // 權限錯誤不應污染模組解析狀態
+          this.moduleStates.delete(moduleName);
+          return false;
+        }
+      }
       const success = this.resolveDependencies(module.dependencies, originToken);
 
       if (!success) {
@@ -222,6 +262,10 @@ class ModuleResolver {
           this.moduleFailure.set(moduleName, { error: Errors.ModuleNotFound });
         }
       } else {
+        this.reportError(Errors.ModuleLoadFailed, originToken);
+        this.moduleFailure.set(moduleName, {
+          error: Errors.ModuleLoadFailed
+        });
       }
 
       this.moduleStates.set(moduleName, 'failed');

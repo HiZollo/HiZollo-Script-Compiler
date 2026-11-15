@@ -4,6 +4,7 @@ import type { CompileError, CompileErrorDetailsMap, CompileErrorFor } from '../t
 enum Errors {
   UnknownStatement,
   CantImportCoreModule,
+  CantImportNoImportModule,
   AlreadyImported,
   LateImport,
   MissingModuleName,
@@ -39,6 +40,7 @@ enum Errors {
 const errorToString: Record<Errors, string> = {
   [`${Errors.UnknownStatement}`]: "未知敘述",
   [`${Errors.CantImportCoreModule}`]: "不能手動引入核心模組",
+  [`${Errors.CantImportNoImportModule}`]: "此模組禁止手動引入",
   [`${Errors.AlreadyImported}`]: "已經引入此模組",
   [`${Errors.LateImport}`]: "匯入敘述應該放在程式開頭",
   [`${Errors.MissingModuleName}`]: "遺漏模組名稱",

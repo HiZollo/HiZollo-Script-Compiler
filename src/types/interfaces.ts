@@ -58,7 +58,7 @@ export interface DiagnosticLocation {
   length: number;
 }
 
-export type CompileErrorBase<E extends Errors> = {
+export interface CompileErrorBase<E extends Errors> {
   error: E;
   errorText: string;
   location: DiagnosticLocation;
