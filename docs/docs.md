@@ -5,6 +5,7 @@
 - [ExecutionError](#ExecutionError)
 - [ExecutionTimeoutError](#ExecutionTimeoutError)
 - [ExecutionErrorCode](#ExecutionErrorCode)
+- [ExecutionOutputExceededLimitError](#ExecutionOutputExceededLimitError)
 - [Errors](#Errors)
 - [Tokens](#Tokens)
 - [類別定義](#類別定義)
@@ -73,6 +74,9 @@ const ew = new ExecutionWorker(code: string)
 - `LateImport`：匯入敘述應該放在程式開頭
 - `MissingModuleName`：遺漏模組名稱
 - `ModuleNotFound`：找不到模組
+- `ModuleLoadFailed`：載入模組時發生錯誤
+- `CircularDependency`：模組有循環依賴
+- `DependencyNotFound`：找不到模組依賴
 - `MissingNumber`：遺漏數字
 - `MissingString`：遺漏字串
 - `MissingIdentifier`：遺漏識別字
@@ -87,15 +91,15 @@ const ew = new ExecutionWorker(code: string)
 - `InappropriateBreakStatement`：跳出敘述只能出現在迴圈內
 - `UnknownLoopSyntax`：未知的迴圈語法
 - `UseDisabledModuleFunction`：使用被禁用的模組函數
-- `Errors.FunctionNotDefined`：函式未宣告
-- `Errors.OverloadNotFound`：找不到符合參數數量的函式重載
-- `Errors.RedeclareFunction`：函式重複宣告
-- `Errors.RedeclareParameter`：函數參數重複宣告
-- `Errors.ReturnOutsideFunction`：返回敘述只能出現在函式內
-- `Errors.InvalidReferenceArgument`：參考參數必須傳入已宣告的識別字
-- `Errors.InvalidFunctionParameter`：函式參數宣告錯誤
-- `Errors.InvalidAssignmentTarget`：無效的指定目標
-- `Errors.MissingExpression`：遺漏運算式
+- `FunctionNotDefined`：函式未宣告
+- `OverloadNotFound`：找不到符合參數數量的函式重載
+- `RedeclareFunction`：函式重複宣告
+- `RedeclareParameter`：函數參數重複宣告
+- `ReturnOutsideFunction`：返回敘述只能出現在函式內
+- `InvalidReferenceArgument`：參考參數必須傳入已宣告的識別字
+- `InvalidFunctionParameter`：函式參數宣告錯誤
+- `InvalidAssignmentTarget`：無效的指定目標
+- `MissingExpression`：遺漏運算式
 
 ## Tokens
 一個表示所有 Token 種類的列舉，請參考[原始碼](../src/constant/token.ts)。
@@ -104,8 +108,8 @@ const ew = new ExecutionWorker(code: string)
 
 ### CompilerOptions
 一個物件，有以下的鍵值對：
-- `includes`：[`PathMap`](#pathmap) 物件。
-- `disabledFunctions`：`string[]`，列出被禁用的函式。
+- `includes`：[`PathMap`](#pathmap) 物件，必須包含 `core` 核心模組。
+- `disabledFunctions`：`string[]`，列出被禁用的函式。可選，預設為 `[]`。
 
 ### PathMap
 一個鍵值都為字串的物件，其鍵表示套件之名稱，值為套件程式之路徑或程式碼。有關套件之詳細敘述請看[此](./guide.md#模組)。
@@ -119,7 +123,7 @@ const ew = new ExecutionWorker(code: string)
 ### BuildResult
 一個物件，有以下的鍵值對：
 - `full`：完整的建碼。在編譯錯誤數量不為 0 時不保證建碼可運作或運作結果符合預期。
-- `partial`：除去模組以外的建碼。
+- `partial`：除去模組和 runtime bootstraps 以外的建碼。
 
 ### ErrorOutput
 一個物件，有以下的鍵值對：
@@ -130,19 +134,34 @@ const ew = new ExecutionWorker(code: string)
 一個物件，有以下的鍵值對：
 - `error`：[`Errors`](#errors) 列舉的值，對應到此錯誤編號。
 - `errorText`：字串，對應到此錯誤中文敘述。
+- `location`：一個 [`DiagnosticLocation`](#diagnosticlocation) 物件，表示錯誤在原始程式碼中的位置。
+- `details`：額外的錯誤資訊。只有部分錯誤類型會包含此屬性，具體內容請參考 [`CompileErrorDetailsMap`](#compileerrordetailsmap)。
+
+### DiagnosticLocation
+一個物件，有以下的鍵值對：
 - `line`：數字，對應到此錯誤發生之行號。
-- `column`：數字，對應到此錯誤發生之符號最右邊於該行之索引值。
-- `token`：[`Tokens`](#tokens) 列舉的值，且應小於 `Tokens.MAX_TERMINAL_TOKEN`，表示發生錯誤之 Token 值。
+- `column`：數字，對應到錯誤發生位置在該行的欄位索引。
+- `length`：數字，表示錯誤位置涵蓋的長度。
+
+### CompileErrorDetailsMap
+依據錯誤類型（[`Errors`](#errors)）提供額外資訊，內容如下：
+- `CircularDependency`：包含 `cycle`，是一個 `string[]`，表示循環依賴的模組路徑。
+- `DependencyNotFound`：包含 `dependencyChain`，是一個 `string[]`，表示找不到依賴時的模組依賴路徑。
+其他錯誤類型不包含 `details` 屬性，所以沒有對應的值。
 
 ### ExecutionOutputCapture
 一個物件，有以下的鍵值對：
 - `output`：字串，目前擷取到的輸出內容。
+- `decoder`：[`StringDecoder`](https://nodejs.org/api/string_decoder.html) 物件，用於處理 UTF-8 輸出資料。
 - `stopped`：布林值，表示是否停止擷取輸出。
 - `exceeded`：布林值，表示是否超出擷取上限。
 - `name`：字串，此串流的名稱。
 - `code`：一個 [`ExecutionErrorCode`](#executionerrorcode) 所列舉的值，表示如果行為設置為 `'halt'` 的話串流超出上限要拋出的錯誤類型。
 - `limit`：此串流的輸出上限長度，有上限會是一個數字，無上限則是 `undefined`。
 - `onLimit`：一個 [`ExecutionOutputLimitBehavior`](#executionoutputlimitbehavior)
+- `pending`：字串，尚未完成處理的輸出內容。
+- `segments`：字串陣列，儲存已擷取的輸出片段。
+- `segmentHead`：數字，表示循環輸出緩衝區目前的起始位置。
 
 ### ExecutionOutputLimitBehavior
 用來指示 [`ExecutionWorker`](#executionworker) 輸出到達限制時採取的策略，可以是以下三種字串：
