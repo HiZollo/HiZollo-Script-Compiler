@@ -1,9 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { Errors, getErrorReport } from '../constant/errors';
 import { Token } from '../constant/token';
-import type { CompileError, ModuleResolverResult, PathMapWithCore } from '../types/interfaces';
+import type { CompileError, CompileErrorDetailsMap, ModuleResolverResult, PathMapWithCore } from '../types/interfaces';
 
 type ModuleState = 'visiting' | 'resolved' | 'failed';
+
+type ModuleFailure =
+  | { error: Errors.ModuleNotFound }
+  | { error: Errors.ModuleLoadFailed }
+  | { error: Errors.CircularDependency; details: CompileErrorDetailsMap[Errors.CircularDependency]; }
+  | { error: Errors.DependencyNotFound; details: CompileErrorDetailsMap[Errors.DependencyNotFound]; };
 
 interface ExtractedPreamble {
   preamble: string;
@@ -24,7 +30,7 @@ class ModuleResolver {
   private importedModule: string[] = [];
   private explicitImportedSet: Set<string> = new Set<string>();
   private moduleStates: Map<string, ModuleState> = new Map<string, ModuleState>();
-  private moduleErrors: Map<string, Errors> = new Map<string, Errors>();
+  private moduleFailure: Map<string, ModuleFailure> = new Map<string, ModuleFailure>();
   private resolvingStack: string[] = [];
   private moduleCode: string = '';
   constructor(private readonly includePath: PathMapWithCore) {}
@@ -35,7 +41,7 @@ class ModuleResolver {
 
     this.explicitImportedSet.clear();
     this.moduleStates.clear();
-    this.moduleErrors.clear();
+    this.moduleFailure.clear();
 
     this.resolvingStack = [];
     this.moduleCode = '';
@@ -164,8 +170,8 @@ class ModuleResolver {
     const state = this.moduleStates.get(moduleName);
     if (state === 'resolved') return true;
     if (state === 'failed') {
-      const error = this.moduleErrors.get(moduleName);
-      if (error) this.reportError(error, originToken);
+      const failure = this.moduleFailure.get(moduleName);
+      if (failure) this.reportFailure(failure, originToken);
       return false;
     }
 
@@ -173,8 +179,11 @@ class ModuleResolver {
     if (state === 'visiting') {
       const cycleStart = this.resolvingStack.indexOf(moduleName);
       const cycle = [...this.resolvingStack.slice(cycleStart), moduleName];
-      this.reportError(Errors.CircularDependency, originToken, cycle.join(' -> '));
-      this.moduleErrors.set(moduleName, Errors.CircularDependency);
+      this.reportError(Errors.CircularDependency, originToken, { cycle });
+      this.moduleFailure.set(moduleName, { 
+        error: Errors.CircularDependency,
+        details: { cycle }
+      });
       return false;
     }
 
@@ -202,15 +211,17 @@ class ModuleResolver {
 
       if (errorCode === 'MODULE_NOT_FOUND' || errorCode === 'ENOENT' || errorCode === 'ENOTDIR') {
         if (isDependency) {
-          this.reportError(Errors.DependencyNotFound, originToken, this.resolvingStack.join(' -> '));
-          this.moduleErrors.set(moduleName, Errors.DependencyNotFound);
+          const dependencyChain = [...this.resolvingStack]
+          this.reportError(Errors.DependencyNotFound, originToken, { dependencyChain });
+          this.moduleFailure.set(moduleName, {
+            error: Errors.DependencyNotFound,
+            details: { dependencyChain }
+          });
         } else {
           this.reportError(Errors.ModuleNotFound, originToken);
-          this.moduleErrors.set(moduleName, Errors.ModuleNotFound);
+          this.moduleFailure.set(moduleName, { error: Errors.ModuleNotFound });
         }
       } else {
-        this.reportError(Errors.ModuleLoadFailed, originToken);
-        this.moduleErrors.set(moduleName, Errors.ModuleLoadFailed);
       }
 
       this.moduleStates.set(moduleName, 'failed');
@@ -220,10 +231,25 @@ class ModuleResolver {
     }
   }
 
-  private reportError(error: Errors, token: Token, details?: string): void {
-    const report = getErrorReport(error, token);
-    if (details) report.errorText += `：${details}`;
-    this.errors.push(report);
+  private reportError<E extends Errors>(error: E, token: Token, ...args: E extends keyof CompileErrorDetailsMap ? [details: CompileErrorDetailsMap[E]] : []): void {
+    this.errors.push(getErrorReport(error, token, ...args));
+  }
+
+  private reportFailure(failure: ModuleFailure, token: Token): void {
+    switch (failure.error) {
+      case Errors.CircularDependency:
+        this.reportError(failure.error, token, failure.details);
+        break;
+
+      case Errors.DependencyNotFound:
+        this.reportError(failure.error, token, failure.details);
+        break;
+
+      case Errors.ModuleNotFound:
+      case Errors.ModuleLoadFailed:
+        this.reportError(failure.error, token);
+        break;
+    }
   }
 }
 

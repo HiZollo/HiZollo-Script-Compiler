@@ -1,5 +1,5 @@
 import type { Token } from './token';
-import type { CompileError } from '../types/interfaces';
+import type { CompileError, CompileErrorDetailsMap, CompileErrorFor } from '../types/interfaces';
 
 enum Errors {
   UnknownStatement,
@@ -71,15 +71,18 @@ const errorToString: Record<Errors, string> = {
   [`${Errors.MissingExpression}`]: "遺漏運算式"
 }
 
-function getErrorReport(errorType: Errors, token: Token): CompileError {
+function getErrorReport<E extends Errors>(errorType: E, token: Token, ...args: E extends keyof CompileErrorDetailsMap ? [details: CompileErrorDetailsMap[E]] : []): CompileErrorFor<E> {
+  const details = args[0];
+  const column = token.right - token.value.length + 1;
   return {
     error: errorType,
     errorText: errorToString[errorType],
-    line: token.left,
-    column: token.right,
-    token: token
-  };
+    location: {
+      line: token.left,
+      column: Math.max(0, column),
+      length: token.value.length
+    },
+    ...(details !== undefined ? { details } : {})
+  } as CompileErrorFor<E>;
 }
-
-
 export { Errors, getErrorReport }

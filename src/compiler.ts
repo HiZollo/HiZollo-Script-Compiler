@@ -3,6 +3,7 @@ import { Parser } from './structure/parser';
 import type { CompilerOptions, CompileResult, PathMapWithCore, CompileError } from './types/interfaces';
 import bootstrapCodeTemplate from 'virtual:hzscript-bootstrap';
 import { ModuleResolver } from './structure/module-resolver';
+import { Errors } from './constant/errors';
 
 class Compiler {
   private scanner: Scanner;
@@ -57,22 +58,31 @@ class Compiler {
   }
 
   private makeErrorMessage(errors: CompileError[]): string {
+    const source = this.scanner.getSource();
     let result = '';
+
     for (const error of errors) {
-      let output: string = '****';
-      for (let i = 0; i<error.token.right-error.token.value.length+1; i++) {
-        output += ' ';
-      }
-      for (let i = 0; i<error.token.value.length; i++) {
-        output += '~';
-      }
-      result += 
-        fiveDigits(error.token.left)+this.scanner.getSource()[error.token.left-1]
-        + '\n' +
-        `${output} ${error.errorText}`
-        + '\n';
+      const { line, column, length } = error.location;
+      const positionIndicator: string = '****' + ' '.repeat(column) + '~'.repeat(length);
+
+      result += fiveDigits(line) + source[line - 1] + '\n' +
+        `${positionIndicator} ${this.formatErrorText(error)}` + '\n';
     }
+
     return result;
+  }
+
+  private formatErrorText(error: CompileError): string {
+    switch (error.error) {
+      case Errors.CircularDependency:
+        return `${error.errorText}：${error.details.cycle.join(' -> ')}`;
+
+      case Errors.DependencyNotFound:
+        return `${error.errorText}：${error.details.dependencyChain.join(' -> ')}`;
+
+      default:
+        return error.errorText;
+    }
   }
 }
 

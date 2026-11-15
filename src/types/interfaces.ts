@@ -42,13 +42,37 @@ export interface ErrorOutput {
   errors: CompileError[]
 }
 
-export interface CompileError {
-  error: Errors,
-  errorText: string,
-  line: number,
-  column: number,
-  token: Token
+export type CompileErrorDetailsMap = {
+  [Errors.CircularDependency]: {
+    cycle: string[];
+  };
+
+  [Errors.DependencyNotFound]: {
+    dependencyChain: string[];
+  };
+};
+
+export interface DiagnosticLocation {
+  line: number;
+  column: number;
+  length: number;
 }
+
+export type CompileErrorBase<E extends Errors> = {
+  error: E;
+  errorText: string;
+  location: DiagnosticLocation;
+};
+
+export type CompileErrorFor<E extends Errors> =
+  E extends Errors
+    ? CompileErrorBase<E> &
+        (E extends keyof CompileErrorDetailsMap
+          ? { details: CompileErrorDetailsMap[E] }
+          : { details?: never })
+    : never;
+
+export type CompileError = CompileErrorFor<Errors>;
 
 export interface TranslateMap {
   [index: string]: string
